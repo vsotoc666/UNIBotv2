@@ -1,0 +1,72 @@
+# ==========================================
+# UNIBot - Archivo de exclusión de Git
+# ==========================================
+
+# 1. SECRETOS Y CREDENCIALES (¡CRÍTICO!)
+# Nunca subas tus contraseñas, API keys o tokens de Supabase/Telegram.
+.env
+.env.local
+.env.development
+.env.production
+*.pem
+*.key
+
+# 2. ENTORNO VIRTUAL DE PYTHON
+# El código fuente de las librerías no se sube, para eso está requirements.txt
+venv/
+env/
+.venv/
+.env/
+
+# 3. CACHÉ DE PYTHON Y COMpilados
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 4. ARCHIVOS DE BASE DE DATOS LOCAL Y MULTIMEDIA
+# Ignoramos la base de datos de desarrollo y los archivos subidos (PDFs)
+db.sqlite3
+db.sqlite3-journal
+media/
+# Nota: No ignoramos 'static/' porque ahí podrían ir tus CSS/JS manuales, 
+# pero sí ignoraríamos la carpeta de recolección si usaras collectstatic
+# staticfiles/
+
+# 5. ARCHIVOS DE SISTEMA OPERATIVO
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+ehthumbs_vista.db
+[Tt]humbs.db
+
+# 6. ARCHIVOS DE EDITORES DE CÓDIGO (IDEs)
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# 7. LOGS DE DJANGO Y PYTHON
+*.log
+pip-log.txt
+pip-delete-this-directory.txt
+celerybeat-schedule
+celerybeat.pid
+
+# 8. TESTS Y COBERTURA (Si los agregas en el futuro)
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.pytest_cache/

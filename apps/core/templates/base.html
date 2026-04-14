@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNIBot | Gestión Inteligente</title>
+    <a href="/" class="text-xl font-bold">UNIBot</a>
+    <script src="https://cdn.tailwindcss.com"></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <nav class="bg-[#0A1929] text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-xl font-bold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><rect x="16" y="16" width="6" height="6" rx="1"></rect><rect x="2" y="16" width="6" height="6" rx="1"></rect><rect x="9" y="2" width="6" height="6" rx="1"></rect><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"></path><path d="M12 12V8"></path></svg>
+                UNIBot
+            </a>
+            <div>
+                {% if user.is_authenticated %}
+                    <span class="mr-4 text-sm">Hola, {{ user.username }}</span>
+                    <a href="{% url 'logout' %}" class="bg-[#BA0C2F] px-3 py-1.5 text-sm rounded font-bold hover:bg-red-700 transition">Salir</a>
+                {% else %}
+                    <a href="{% url 'landing' %}" class="hover:text-slate-300">Inicio</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <main class="container mx-auto p-4 mt-6">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

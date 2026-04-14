@@ -1,0 +1,340 @@
+{% extends 'base.html' %}
+{% block extra_head %}
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+    #calendar-container { min-height: 650px; height: 100%; }
+    .fc .fc-toolbar-title { font-size: 1.25rem; font-weight: 800; color: #0A1929; }
+    .fc-event { cursor: pointer; border-radius: 4px; padding: 2px 4px; border: none; transition: opacity 0.2s; }
+    .fc-event:hover { opacity: 0.9; }
+    
+    .btn-primary { background-color: #0A1929; color: white; transition: all 0.2s; }
+    .btn-primary:hover:not(:disabled) { background-color: #BA0C2F; }
+    .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="app" class="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-10" v-cloak>
+    
+    <div class="lg:col-span-4 space-y-6 flex flex-col">
+        
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-extrabold text-[#0A1929] mb-4 flex items-center gap-2">
+                <i data-lucide="bot"></i> Mi UNIBot IA
+            </h2>
+
+            <div v-if="!djangoState.botRequested" class="text-center py-2">
+                <p class="text-sm text-slate-600 mb-4 text-left">Activa tu asistente de IA para responder dudas en Telegram sobre tu agrupación.</p>
+                <form method="POST" action="">
+                    {% csrf_token %}
+                    <button type="submit" name="solicitar_bot" class="w-full btn-primary py-3 rounded-xl font-bold shadow-md flex justify-center items-center gap-2">
+                        <i data-lucide="power" class="w-4 h-4"></i> Activar UNIBot
+                    </button>
+                </form>
+            </div>
+
+            <div v-else class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Nombre del Asistente</label>
+                    <input v-model="botForm.nombre" type="text" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none focus:border-[#0A1929] focus:ring-1 focus:ring-[#0A1929] transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Personalidad</label>
+                    <select v-model="botForm.tono" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none focus:border-[#0A1929]">
+                        <option value="amigable">Amigable y Cercano 😊</option>
+                        <option value="formal">Formal y Académico 👔</option>
+                        <option value="tecnico">Técnico y Directo ⚙️</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Documento Base (PDF)</label>
+                    <input type="file" ref="pdfInput" accept=".pdf" class="w-full text-xs text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-[#0A1929] hover:file:bg-slate-200 cursor-pointer">
+                </div>
+                <button @click="guardarConfiguracionBot" :disabled="ui.savingBot" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-70">
+                    <span v-show="!ui.savingBot" class="flex items-center"><i data-lucide="save" class="w-4 h-4"></i></span>
+                    <span v-show="ui.savingBot" class="flex items-center"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i></span>
+                    [[ ui.savingBot ? 'Entrenando IA...' : 'Guardar y Entrenar' ]]
+                </button> 
+                <div v-if="ui.botMessage" class="text-center text-xs font-bold mt-2" :class="ui.botError ? 'text-red-600' : 'text-emerald-600'">
+                    [[ ui.botMessage ]]
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-extrabold text-[#0A1929] mb-4 flex items-center gap-2">
+                <i data-lucide="calendar-plus" class="text-[#BA0C2F]"></i> Agendar Evento
+            </h2>
+            <div class="space-y-4">
+                <input v-model="eventoForm.titulo" placeholder="Ej. Taller de Arduino Básico" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none focus:border-[#0A1929]">
+                <textarea v-model="eventoForm.descripcion" placeholder="¿De qué trata el evento?..." class="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none h-20 resize-none focus:border-[#0A1929]"></textarea>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Inicio</label>
+                        <input v-model="eventoForm.fecha_inicio" type="datetime-local" class="w-full border border-slate-300 p-2 rounded-lg text-xs outline-none focus:border-[#0A1929]">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Fin</label>
+                        <input v-model="eventoForm.fecha_fin" type="datetime-local" class="w-full border border-slate-300 p-2 rounded-lg text-xs outline-none focus:border-[#0A1929]">
+                    </div>
+                </div>
+                <button @click="crearEvento" :disabled="ui.savingEvento" class="w-full btn-primary py-3 rounded-xl font-bold shadow-md flex justify-center items-center gap-2">
+                    <span v-show="ui.savingEvento" class="flex items-center"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i></span>
+                    [[ ui.savingEvento ? 'Publicando...' : 'Publicar Evento' ]]
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex-grow">
+            <h2 class="text-sm font-extrabold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <i data-lucide="link" class="w-4 h-4"></i> Links Públicos
+            </h2>
+            
+            <div v-if="ui.loadingEventos" class="flex justify-center py-4">
+                <i data-lucide="loader-2" class="w-6 h-6 text-[#0A1929] animate-spin"></i>
+            </div>
+            
+            <div v-else class="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                <div v-for="ev in eventos" :key="ev.id" class="p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#0A1929] transition-colors group">
+                    <p class="text-sm font-bold text-[#0A1929] mb-2 truncate" :title="ev.title">[[ ev.title ]]</p>
+                    <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1.5">
+                        <input readonly :value="generarUrl(ev.slug)" class="text-[10px] w-full bg-transparent border-none outline-none text-blue-600 px-1 cursor-text select-all">
+                        <button @click="copiarAlPortapapeles(generarUrl(ev.slug))" class="text-slate-400 hover:text-[#0A1929] p-1 rounded-md hover:bg-slate-100 transition-colors" title="Copiar Link">
+                            <i data-lucide="copy" class="w-4 h-4"></i>
+                        </button>
+                        <a :href="generarUrl(ev.slug)" target="_blank" class="text-slate-400 hover:text-[#0A1929] p-1 rounded-md hover:bg-slate-100 transition-colors" title="Abrir en nueva pestaña">
+                            <i data-lucide="external-link" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                </div>
+                <div v-if="eventos.length === 0" class="text-center py-6 text-slate-400">
+                    <i data-lucide="calendar-x" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                    <p class="text-xs">Aún no hay eventos programados.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="lg:col-span-8 flex flex-col">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex-grow">
+            <div id="calendar-container">
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getCsrfToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === ('csrftoken=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue || '{{ csrf_token }}';
+    }
+
+    const DJANGO_STATE = {
+        botRequested: '{{ solicitud_bot|yesno:"true,false" }}' === 'true',
+        botNombre: '{{ config_bot.nombre_bot|default:"Asistente UNIBot"|escapejs }}',
+        botTono: '{{ config_bot.tono|default:"amigable"|escapejs }}',
+        host: window.location.origin
+    };
+
+    const { createApp, nextTick } = Vue;
+
+    createApp({
+        compilerOptions: { delimiters: ['[[', ']]'] },
+        data() {
+            return {
+                djangoState: DJANGO_STATE,
+                
+                botForm: {
+                    nombre: DJANGO_STATE.botNombre,
+                    tono: DJANGO_STATE.botTono
+                },
+                
+                eventoForm: { titulo: '', descripcion: '', fecha_inicio: '', fecha_fin: '' },
+                
+                eventos: [],
+                calendarInstance: null,
+                
+                ui: {
+                    savingBot: false,
+                    botMessage: '',
+                    botError: false,
+                    savingEvento: false,
+                    loadingEventos: true
+                }
+            }
+        },
+        mounted() {
+            this.fetchEventos().then(() => {
+                nextTick(() => {
+                    this.initCalendar();
+                    lucide.createIcons();
+                });
+            });
+        },
+        updated() {
+            lucide.createIcons();
+        },
+        methods: {
+            async fetchEventos() {
+                this.ui.loadingEventos = true;
+                try {
+                    const response = await fetch('/api/eventos/dashboard-data/');
+                    if (!response.ok) throw new Error("Fallo al obtener eventos");
+                    const data = await response.json();
+                    this.eventos = data;
+                    
+                    if (this.calendarInstance) {
+                        const rawEvents = JSON.parse(JSON.stringify(this.eventos));
+                        this.calendarInstance.removeAllEvents();
+                        this.calendarInstance.addEventSource(rawEvents);
+                    }
+                } catch (error) {
+                    console.error("Error cargando eventos:", error);
+                } finally {
+                    this.ui.loadingEventos = false;
+                }
+            },
+            
+            initCalendar() {
+                const calendarEl = document.getElementById('calendar');
+                const rawEvents = JSON.parse(JSON.stringify(this.eventos));
+                
+                this.calendarInstance = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    locale: 'es',
+                    firstDay: 1,
+                    headerToolbar: { 
+                        left: 'prev,next today', 
+                        center: 'title', 
+                        right: 'dayGridMonth,timeGridWeek' 
+                    },
+                    events: rawEvents,
+                    height: '100%',
+                    eventClick: (info) => {
+                        const slug = info.event.extendedProps.slug;
+                        if(slug) {
+                            window.open(this.generarUrl(slug), '_blank');
+                        }
+                    }
+                });
+                this.calendarInstance.render();
+            },
+
+            async crearEvento() {
+                if (!this.eventoForm.titulo || !this.eventoForm.fecha_inicio || !this.eventoForm.fecha_fin) {
+                    alert("Por favor, completa el título y las fechas del evento.");
+                    return;
+                }
+
+                this.ui.savingEvento = true;
+                try {
+                    // 1. Limpieza de fechas: Agregamos los segundos ( :00 ) si HTML no los puso
+                    let start = this.eventoForm.fecha_inicio;
+                    if (start.length === 16) start += ':00'; 
+                    
+                    let end = this.eventoForm.fecha_fin;
+                    if (end.length === 16) end += ':00';
+
+                    // 2. Construcción del paquete blindado
+                    const payload = {
+                        titulo: this.eventoForm.titulo,
+                        // Si está vacío, enviamos un texto por defecto para evitar el rechazo
+                        descripcion: this.eventoForm.descripcion || "Sin descripción", 
+                        fecha_inicio: start,
+                        fecha_fin: end
+                    };
+
+                    const res = await fetch('/api/eventos/', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json', 
+                            'X-CSRFToken': getCsrfToken() 
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (res.ok) {
+                        this.eventoForm = { titulo: '', descripcion: '', fecha_inicio: '', fecha_fin: '' };
+                        await this.fetchEventos(); 
+                        alert("¡Evento publicado con éxito!");
+                    } else {
+                        // 3. Extracción exacta del error 422 de Django Ninja
+                        const errorData = await res.json();
+                        const errorDetail = errorData.detail[0]; 
+                        
+                        console.error("Campo que falla:", errorDetail.loc);
+                        console.error("Motivo:", errorDetail.msg);
+                        
+                        alert(`Error de validación en el servidor.\n\nCampo: ${errorDetail.loc[errorDetail.loc.length - 1]}\nMotivo: ${errorDetail.msg}`);
+                    }
+                } catch (e) {
+                    console.error("Error de Red:", e);
+                    alert("Error de conexión al crear el evento.");
+                } finally {
+                    this.ui.savingEvento = false;
+                }
+            },
+
+            async guardarConfiguracionBot() {
+                this.ui.savingBot = true;
+                this.ui.botMessage = '';
+                
+                const formData = new FormData();
+                formData.append('nombre_bot', this.botForm.nombre);
+                formData.append('tono', this.botForm.tono);
+                
+                const fileInput = this.$refs.pdfInput;
+                if (fileInput && fileInput.files.length > 0) {
+                    formData.append('documento', fileInput.files[0]);
+                }
+
+                try {
+                    const res = await fetch('/api/agrupaciones/bot-config/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCsrfToken() },
+                        body: formData
+                    });
+                    
+                    if (res.ok) {
+                        this.ui.botError = false;
+                        this.ui.botMessage = '¡IA actualizada correctamente!';
+                    } else {
+                        throw new Error("El servidor rechazó la solicitud");
+                    }
+                } catch (e) {
+                    this.ui.botError = true;
+                    this.ui.botMessage = 'Error al procesar la configuración.';
+                } finally {
+                    this.ui.savingBot = false;
+                    setTimeout(() => this.ui.botMessage = '', 4000);
+                }
+            },
+
+            generarUrl(slug) {
+                if (!slug) return "Procesando...";
+                return `${this.djangoState.host}/evento/registro/${slug}/`;
+            },
+            
+            copiarAlPortapapeles(texto) {
+                if(texto === "Procesando...") return;
+                navigator.clipboard.writeText(texto)
+                    .then(() => alert("¡Enlace de inscripción copiado!"))
+                    .catch(() => alert("No se pudo copiar el enlace."));
+            }
+        }
+    }).mount('#app');
+</script>
+{% endblock %}
