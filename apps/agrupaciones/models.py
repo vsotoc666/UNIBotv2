@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from pgvector.django import VectorField
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
@@ -32,3 +33,12 @@ class ConfiguracionBot(models.Model):
 
     def __str__(self):
         return f"Bot de {self.agrupacion.nombre}"
+
+class FragmentoConocimiento(models.Model):
+    agrupacion = models.ForeignKey(Agrupacion, on_delete=models.CASCADE, related_name='fragmentos')
+    contenido = models.TextField()
+    metadata = models.JSONField(null=True, blank=True)
+    embedding = VectorField(dimensions=768) # Dimensión para Gemini text-embedding-004
+
+    def __str__(self):
+        return f"Fragmento de {self.agrupacion.nombre} ({self.id})"
