@@ -27,18 +27,34 @@ class ConfiguracionBot(models.Model):
     agrupacion = models.OneToOneField(Agrupacion, on_delete=models.CASCADE)
     nombre_bot = models.CharField(max_length=100, default="Asistente UNIBot")
     tono = models.CharField(max_length=20, choices=TONOS, default='amigable')
-    # Se subirá a Supabase Storage gracias a django-storages
-    documento_conocimiento = models.FileField(upload_to='pdfs/', validators=[validate_file_size], null=True, blank=True)
+    # Mantener texto_extraido como cache global de la agrupación si se desea, 
+    # pero ahora el conocimiento real vive en DocumentoConocimiento
     texto_extraido = models.TextField(blank=True)
 
     def __str__(self):
         return f"Bot de {self.agrupacion.nombre}"
 
+class DocumentoConocimiento(models.Model):
+    agrupacion = models.ForeignKey(Agrupacion, on_delete=models.CASCADE, related_name='documentos')
+    archivo = models.FileField(upload_to='pdfs/', validators=[validate_file_size])
+    nombre = models.CharField(max_length=255)
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+    procesado = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.nombre} ({self.agrupacion.nombre})"
+
 class FragmentoConocimiento(models.Model):
     agrupacion = models.ForeignKey(Agrupacion, on_delete=models.CASCADE, related_name='fragmentos')
+    # Vinculamos al documento origen para poder borrar selectivamente
+    documento = models.ForeignKey(DocumentoConocimiento, on_delete=models.CASCADE, related_name='fragmentos', null=True)
     contenido = models.TextField()
     metadata = models.JSONField(null=True, blank=True)
     embedding = VectorField(dimensions=768) # Dimensión para Gemini text-embedding-004
 
     def __str__(self):
-        return f"Fragmento de {self.agrupacion.nombre} ({self.id})"
+        return f"Fragm. de {self.nombre_documento} ({self.id})"
+
+    @property
+    def nombre_documento(self):
+        return self.documento.nombre if self.documento else "Legacy"

@@ -97,3 +97,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Redirecciones de Autenticación
 LOGIN_URL = 'login'           # Le dice a @login_required a dónde ir
 LOGIN_REDIRECT_URL = 'dashboard'  # A dónde ir después de un login exitoso (por defecto)
+
+# Configuración de Django Q (Tareas en background)
+Q_CLUSTER = {
+    'name': 'UNIBot_Cluster',
+    'workers': 4,
+    'recycle': 500,
+    'timeout': 300,
+    'retry': 360,
+    'orm': 'default', # USAR LA BASE DE DATOS EN LUGAR DE REDIS
+}

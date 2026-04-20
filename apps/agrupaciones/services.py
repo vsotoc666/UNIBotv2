@@ -1,19 +1,24 @@
 import os
+import time
 from google import genai
 from pypdf import PdfReader
-from .models import FragmentoConocimiento
+from .models import FragmentoConocimiento, DocumentoConocimiento
 
 
-def process_pdf_rag(config_bot):
+def process_pdf_rag(documento):
     """
-    Extrae texto de un PDF, lo divide en fragmentos con overlap y genera embeddings
-    con Google text-embedding-004. Almacena los vectores en Supabase via pgvector.
+    Extrae texto de un DocumentoConocimiento, lo divide en fragmentos y genera embeddings.
+    Implementa control de velocidad para no agotar la cuota de Google.
     """
-    if not config_bot.documento_conocimiento:
+    # Verificar que el documento aún exista en la DB (por si se borró rápido)
+    if not DocumentoConocimiento.objects.filter(id=documento.id).exists():
         return
 
-    # 1. Leer PDF página por página para conservar metadatos de página real
-    reader = PdfReader(config_bot.documento_conocimiento)
+    if not documento.archivo:
+        return
+
+    # 1. Leer PDF
+    reader = PdfReader(documento.archivo)
     pages_text = []
     full_text = ""
 
@@ -23,17 +28,13 @@ def process_pdf_rag(config_bot):
         full_text += extracted + "\n"
 
     if not full_text.strip():
-        print(f"[RAG] El PDF de {config_bot.agrupacion.nombre} no tiene texto extraíble (probablemente es una imagen escaneada).")
+        print(f"[RAG] El PDF '{documento.nombre}' no tiene texto extraíble.")
         return
 
-    # Actualizar texto plano completo para compatibilidad / fallback
-    config_bot.texto_extraido = full_text
-    config_bot.save(update_fields=['texto_extraido'])
-
-    # 2. Chunking con overlap: ~800 caracteres por chunk, 10% de solapamiento
+    # 2. Chunking
+    chunks = []
     chunk_size = 800
-    overlap = int(chunk_size * 0.10)  # 80 caracteres de solapamiento
-    chunks = []  # lista de (contenido, num_pagina)
+    overlap = 80
 
     for page_num, page_text in pages_text:
         if not page_text.strip():
@@ -46,41 +47,54 @@ def process_pdf_rag(config_bot):
                 chunks.append((chunk, page_num))
             start += chunk_size - overlap
 
-    if not chunks:
-        print(f"[RAG] No se generaron fragmentos para {config_bot.agrupacion.nombre}.")
-        return
-
-    # 3. Generar embeddings y guardar en Supabase (pgvector)
+    # 3. Embeddings y Guardado
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-    # Limpiar fragmentos anteriores de esta agrupación
-    FragmentoConocimiento.objects.filter(agrupacion=config_bot.agrupacion).delete()
-
-    doc_name = getattr(config_bot.documento_conocimiento, 'name', 'documento.pdf').split('/')[-1]
+    # Limpiar fragmentos anteriores SOLO de este documento
+    FragmentoConocimiento.objects.filter(documento=documento).delete()
 
     for i, (chunk, page_num) in enumerate(chunks):
         try:
+            # Control de velocidad: evitar el error 429 de Google
+            time.sleep(0.8)
+
             response = client.models.embed_content(
-                model='text-embedding-004',
-                contents=chunk
+                model='gemini-embedding-001',
+                contents=chunk,
+                config={'output_dimensionality': 768}
             )
             embedding_vector = response.embeddings[0].values
 
+            # Re-verificar si el documento sigue existiendo antes de crear fragmento
+            if not DocumentoConocimiento.objects.filter(id=documento.id).exists():
+                print(f"[RAG] Deteniendo: el documento {documento.nombre} ya no existe.")
+                return
+
             FragmentoConocimiento.objects.create(
-                agrupacion=config_bot.agrupacion,
+                agrupacion=documento.agrupacion,
+                documento=documento,
                 contenido=chunk,
                 metadata={
                     'chunk_index': i,
                     'page_number': page_num,
-                    'source_file': doc_name,
+                    'source_file': documento.nombre,
                     'total_chunks': len(chunks),
                 },
                 embedding=embedding_vector
             )
         except Exception as e:
-            print(f"[RAG] Error generando embedding para fragmento {i} (pág {page_num}): {e}")
+            print(f"[RAG] Error en fragmento {i} de {documento.nombre}: {e}")
+            if "429" in str(e):
+                print("[RAG] ⚠️ Límite de cuota alcanzado. Esperando 15s...")
+                time.sleep(15)
 
-    print(f"[RAG] ✅ Procesados {len(chunks)} fragmentos para {config_bot.agrupacion.nombre}.")
+    try:
+        if DocumentoConocimiento.objects.filter(id=documento.id).exists():
+            documento.procesado = True
+            documento.save(update_fields=['procesado'])
+            print(f"[RAG] ✅ '{documento.nombre}' procesado ({len(chunks)} fragmentos).")
+    except Exception:
+        pass
 
 
 def get_relevant_context(agrupacion, query, top_k=3):
@@ -92,8 +106,9 @@ def get_relevant_context(agrupacion, query, top_k=3):
 
     try:
         response = client.models.embed_content(
-            model='text-embedding-004',
-            contents=query
+            model='gemini-embedding-001',
+            contents=query,
+            config={'output_dimensionality': 768}
         )
         query_vector = response.embeddings[0].values
 

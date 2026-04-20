@@ -25,6 +25,7 @@
                 <i data-lucide="bot"></i> Mi UNIBot IA
             </h2>
 
+            <!-- Estado: No solicitado -->
             <div v-if="!djangoState.botRequested" class="text-center py-2">
                 <p class="text-sm text-slate-600 mb-4 text-left">Activa tu asistente de IA para responder dudas en Telegram sobre tu agrupación.</p>
                 <form method="POST" action="">
@@ -35,28 +36,74 @@
                 </form>
             </div>
 
-            <div v-else class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Nombre del Asistente</label>
-                    <input v-model="botForm.nombre" type="text" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none focus:border-[#0A1929] focus:ring-1 focus:ring-[#0A1929] transition-all">
+            <!-- Estado: Activo (Configuración y Documentos) -->
+            <div v-else class="space-y-6">
+                <!-- Configuración de Personalidad -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Nombre del Asistente</label>
+                        <input v-model="botForm.nombre" type="text" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none focus:border-[#0A1929] transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Personalidad</label>
+                        <select v-model="botForm.tono" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none focus:border-[#0A1929]">
+                            <option value="amigable">Amigable y Cercano 😊</option>
+                            <option value="formal">Formal y Académico 👔</option>
+                            <option value="tecnico">Técnico y Directo ⚙️</option>
+                        </select>
+                    </div>
+                    <button @click="guardarConfiguracionBot" :disabled="ui.savingBot" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 disabled:opacity-70">
+                        <i v-if="!ui.savingBot" data-lucide="save" class="w-4 h-4"></i>
+                        <i v-else data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+                        Guardar Perfil
+                    </button>
                 </div>
+
+                <hr class="border-slate-100">
+
+                <!-- Biblioteca de Documentos -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Personalidad</label>
-                    <select v-model="botForm.tono" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none focus:border-[#0A1929]">
-                        <option value="amigable">Amigable y Cercano 😊</option>
-                        <option value="formal">Formal y Académico 👔</option>
-                        <option value="tecnico">Técnico y Directo ⚙️</option>
-                    </select>
+                   <div class="flex justify-between items-center mb-3">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Conocimiento (PDFs)</label>
+                        <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">[[ documentos.length || 0 ]] archivos</span>
+                   </div>
+
+                   <!-- Lista de Archivos -->
+                   <div class="space-y-2 mb-4 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                        <div v-for="doc in documentos" :key="doc.id" class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200 group">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <i data-lucide="file-text" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                                <span class="text-xs text-slate-700 truncate" :title="doc.nombre">[[ doc.nombre ]]</span>
+                                
+                                <!-- Indicador de Estado -->
+                                <span v-if="!doc.procesado" class="flex items-center gap-1 text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full animate-pulse">
+                                    <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>
+                                    Entrenando...
+                                </span>
+                                <span v-else class="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                    <i data-lucide="check" class="w-3 h-3"></i>
+                                    Listo
+                                </span>
+                            </div>
+                            <button @click="borrarDocumento(doc.id)" class="text-slate-300 hover:text-red-500 transition-colors p-1">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        <div v-if="documentos.length === 0" class="text-center py-4 border-2 border-dashed border-slate-100 rounded-xl">
+                            <p class="text-[10px] text-slate-400">Sin documentos aún.</p>
+                        </div>
+                   </div>
+
+                    <!-- Botón para subir nuevo -->
+                    <div class="relative">
+                        <input type="file" ref="pdfInput" @change="subirNuevoDocumento" accept=".pdf" class="hidden" id="fileUpload">
+                        <label for="fileUpload" class="cursor-pointer w-full bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 text-sm">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            [[ ui.uploadingPdf ? 'Subiendo...' : 'Agregar PDF' ]]
+                        </label>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Documento Base (PDF)</label>
-                    <input type="file" ref="pdfInput" accept=".pdf" class="w-full text-xs text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-[#0A1929] hover:file:bg-slate-200 cursor-pointer">
-                </div>
-                <button @click="guardarConfiguracionBot" :disabled="ui.savingBot" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-70">
-                    <span v-show="!ui.savingBot" class="flex items-center"><i data-lucide="save" class="w-4 h-4"></i></span>
-                    <span v-show="ui.savingBot" class="flex items-center"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i></span>
-                    [[ ui.savingBot ? 'Entrenando IA...' : 'Guardar y Entrenar' ]]
-                </button> 
+
                 <div v-if="ui.botMessage" class="text-center text-xs font-bold mt-2" :class="ui.botError ? 'text-red-600' : 'text-emerald-600'">
                     [[ ui.botMessage ]]
                 </div>
@@ -165,6 +212,7 @@
                 eventoForm: { titulo: '', descripcion: '', fecha_inicio: '', fecha_fin: '' },
                 
                 eventos: [],
+                documentos: [], // Nueva lista de documentos
                 calendarInstance: null,
                 
                 ui: {
@@ -172,8 +220,10 @@
                     botMessage: '',
                     botError: false,
                     savingEvento: false,
-                    loadingEventos: true
-                }
+                    loadingEventos: true,
+                    uploadingPdf: false
+                },
+                pollingInterval: null
             }
         },
         mounted() {
@@ -183,11 +233,62 @@
                     lucide.createIcons();
                 });
             });
+            this.fetchDocumentos();
+            // Poll cada 5 segundos para ver si los archivos terminaron de procesarse
+            this.pollingInterval = setInterval(this.fetchDocumentos, 5000);
+        },
+        unmounted() {
+            if(this.pollingInterval) clearInterval(this.pollingInterval);
         },
         updated() {
             lucide.createIcons();
         },
         methods: {
+            async fetchDocumentos() {
+                try {
+                    const res = await fetch('/api/agrupaciones/documentos/');
+                    if (res.ok) this.documentos = await res.json();
+                } catch(e) { console.error("Error cargando docs", e); }
+            },
+
+            async subirNuevoDocumento(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                this.ui.uploadingPdf = true;
+                const formData = new FormData();
+                formData.append('archivo', file);
+
+                try {
+                    const res = await fetch('/api/agrupaciones/documentos/subir/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCsrfToken() },
+                        body: formData
+                    });
+                    if (res.ok) {
+                        await this.fetchDocumentos();
+                        this.ui.botMessage = 'Archivo subido correctamente.';
+                    } else {
+                        alert("Error al subir archivo.");
+                    }
+                } catch (e) { console.error(e); }
+                finally { 
+                    this.ui.uploadingPdf = false; 
+                    setTimeout(() => this.ui.botMessage = '', 3000);
+                }
+            },
+
+            async borrarDocumento(id) {
+                if(!confirm("¿Seguro que quieres borrar este documento? El bot ya no tendrá este conocimiento.")) return;
+                try {
+                    await fetch(`/api/agrupaciones/documentos/${id}/`, {
+                        method: 'DELETE',
+                        headers: { 'X-CSRFToken': getCsrfToken() }
+                    });
+                    this.fetchDocumentos();
+                } catch(e) { console.error(e); }
+            },
+
             async fetchEventos() {
                 this.ui.loadingEventos = true;
                 try {
@@ -241,17 +342,13 @@
 
                 this.ui.savingEvento = true;
                 try {
-                    // 1. Limpieza de fechas: Agregamos los segundos ( :00 ) si HTML no los puso
                     let start = this.eventoForm.fecha_inicio;
                     if (start.length === 16) start += ':00'; 
-                    
                     let end = this.eventoForm.fecha_fin;
                     if (end.length === 16) end += ':00';
 
-                    // 2. Construcción del paquete blindado
                     const payload = {
                         titulo: this.eventoForm.titulo,
-                        // Si está vacío, enviamos un texto por defecto para evitar el rechazo
                         descripcion: this.eventoForm.descripcion || "Sin descripción", 
                         fecha_inicio: start,
                         fecha_fin: end
@@ -259,10 +356,7 @@
 
                     const res = await fetch('/api/eventos/', {
                         method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json', 
-                            'X-CSRFToken': getCsrfToken() 
-                        },
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
                         body: JSON.stringify(payload)
                     });
                     
@@ -271,21 +365,10 @@
                         await this.fetchEventos(); 
                         alert("¡Evento publicado con éxito!");
                     } else {
-                        // 3. Extracción exacta del error 422 de Django Ninja
-                        const errorData = await res.json();
-                        const errorDetail = errorData.detail[0]; 
-                        
-                        console.error("Campo que falla:", errorDetail.loc);
-                        console.error("Motivo:", errorDetail.msg);
-                        
-                        alert(`Error de validación en el servidor.\n\nCampo: ${errorDetail.loc[errorDetail.loc.length - 1]}\nMotivo: ${errorDetail.msg}`);
+                        alert("Error de validación en el servidor.");
                     }
-                } catch (e) {
-                    console.error("Error de Red:", e);
-                    alert("Error de conexión al crear el evento.");
-                } finally {
-                    this.ui.savingEvento = false;
-                }
+                } catch (e) { console.error(e); }
+                finally { this.ui.savingEvento = false; }
             },
 
             async guardarConfiguracionBot() {
@@ -295,11 +378,6 @@
                 const formData = new FormData();
                 formData.append('nombre_bot', this.botForm.nombre);
                 formData.append('tono', this.botForm.tono);
-                
-                const fileInput = this.$refs.pdfInput;
-                if (fileInput && fileInput.files.length > 0) {
-                    formData.append('documento', fileInput.files[0]);
-                }
 
                 try {
                     const res = await fetch('/api/agrupaciones/bot-config/', {
@@ -307,19 +385,18 @@
                         headers: { 'X-CSRFToken': getCsrfToken() },
                         body: formData
                     });
-                    
                     if (res.ok) {
                         this.ui.botError = false;
-                        this.ui.botMessage = '¡IA actualizada correctamente!';
+                        this.ui.botMessage = 'Configuración guardada.';
                     } else {
-                        throw new Error("El servidor rechazó la solicitud");
+                        throw new Error();
                     }
                 } catch (e) {
                     this.ui.botError = true;
-                    this.ui.botMessage = 'Error al procesar la configuración.';
+                    this.ui.botMessage = 'Error al guardar.';
                 } finally {
                     this.ui.savingBot = false;
-                    setTimeout(() => this.ui.botMessage = '', 4000);
+                    setTimeout(() => this.ui.botMessage = '', 3000);
                 }
             },
 
@@ -331,10 +408,11 @@
             copiarAlPortapapeles(texto) {
                 if(texto === "Procesando...") return;
                 navigator.clipboard.writeText(texto)
-                    .then(() => alert("¡Enlace de inscripción copiado!"))
-                    .catch(() => alert("No se pudo copiar el enlace."));
+                    .then(() => alert("¡Enlace copiado!"))
+                    .catch(() => alert("Error al copiar."));
             }
         }
     }).mount('#app');
+</script>
 </script>
 {% endblock %}
