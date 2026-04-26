@@ -7,7 +7,8 @@ from ninja import NinjaAPI
 # Vistas Generales y de Eventos
 from apps.core.views import (
     landing, dashboard_view, registro_evento, 
-    terminos_view, privacidad_view
+    terminos_view, privacidad_view, google_oauth_start, google_oauth_callback,
+    notion_oauth_start, notion_oauth_callback, clipup_oauth_start, clipup_oauth_callback
 )
 
 # ¡NUEVO! Importamos las vistas de Supabase en lugar de las antiguas
@@ -40,6 +41,12 @@ urlpatterns = [
     
     # Rutas de la App
     path('dashboard/', dashboard_view, name='dashboard'),
+    path('auth/google/start/', google_oauth_start, name='google_oauth_start'),
+    path('auth/google/callback/', google_oauth_callback, name='google_oauth_callback'),
+    path('auth/notion/start/', notion_oauth_start, name='notion_oauth_start'),
+    path('auth/notion/callback/', notion_oauth_callback, name='notion_oauth_callback'),
+    path('auth/clipup/start/', clipup_oauth_start, name='clipup_oauth_start'),
+    path('auth/clipup/callback/', clipup_oauth_callback, name='clipup_oauth_callback'),
     path('evento/registro/<uuid:slug>/', registro_evento, name='registro_evento'),
     
     path('api/', api.urls),

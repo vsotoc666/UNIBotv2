@@ -1,12 +1,113 @@
 import os
+import unicodedata
 from google import genai
 from telegram import Update
 from telegram.ext import Application, MessageHandler, CommandHandler, filters, ContextTypes
 from asgiref.sync import sync_to_async
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 from apps.bot.models import TelegramChat
 from apps.agrupaciones.models import Agrupacion, ConfiguracionBot
 from apps.eventos.models import Evento
+
+
+SAFE_FALLBACK_REPLY = (
+    "Por seguridad y privacidad, no puedo compartir datos personales ni información interna "
+    "de arquitectura, integraciones o configuración. "
+    "Sí puedo ayudarte con información pública del evento: fecha, hora, descripción y link de inscripción."
+)
+
+
+def _normalize_text(value: str) -> str:
+    raw = (value or "").strip().lower()
+    no_accents = "".join(
+        ch for ch in unicodedata.normalize("NFKD", raw) if not unicodedata.combining(ch)
+    )
+    return no_accents
+
+
+def _is_sensitive_question(user_text: str) -> bool:
+    text = _normalize_text(user_text)
+    sensitive_hits = [
+        # Datos personales.
+        "inscrito",
+        "asistente",
+        "participante",
+        "alumno",
+        "correo",
+        "email",
+        "telefono",
+        "dni",
+        "celular",
+        "whatsapp",
+        "contacto",
+        # Integraciones internas.
+        "notion",
+        "clipup",
+        "clickup",
+        "webhook",
+        # Secretos/credenciales.
+        "token",
+        "access token",
+        "clave",
+        "password",
+        "contrasena",
+        "credencial",
+        "api key",
+        "oauth",
+        "refresh token",
+        "client secret",
+        "client id",
+        # Arquitectura e infraestructura interna.
+        "supabase",
+        "postgres",
+        "postgresql",
+        "base de datos",
+        "db",
+        "backend",
+        "servidor",
+        "hosting",
+        "aws",
+        "s3",
+        "redis",
+        "django",
+        "endpoint interno",
+        "arquitectura",
+        "infraestructura",
+        "como funciona internamente",
+        "stack tecnico",
+        "codigo fuente",
+        "logs",
+    ]
+    return any(hit in text for hit in sensitive_hits)
+
+
+def _response_leaks_sensitive_data(answer: str) -> bool:
+    text = _normalize_text(answer)
+    suspicious = [
+        # Integraciones y arquitectura.
+        "supabase",
+        "postgres",
+        "postgresql",
+        "django",
+        "backend",
+        "notion",
+        "clipup",
+        "clickup",
+        "oauth",
+        "webhook",
+        # Secretos/credenciales.
+        "token",
+        "refresh_token",
+        "api_key",
+        "client_secret",
+        "client_id",
+        "contrasena",
+        "password",
+        "@",
+    ]
+    return any(hit in text for hit in suspicious)
+
 
 @sync_to_async
 def asociar_chat_a_agrupacion(chat_id: str, uuid_str: str):
@@ -18,7 +119,7 @@ def asociar_chat_a_agrupacion(chat_id: str, uuid_str: str):
             defaults={'agrupacion': agrupacion}
         )
         return agrupacion.nombre
-    except Agrupacion.DoesNotExist:
+    except (Agrupacion.DoesNotExist, ValidationError, ValueError):
         return None
 
 @sync_to_async
@@ -26,7 +127,8 @@ def obtener_contexto_tenant(chat_id: str):
     try:
         asociacion = TelegramChat.objects.get(chat_id=chat_id)
         agrupacion = asociacion.agrupacion
-        config = ConfiguracionBot.objects.get(agrupacion=agrupacion)
+        # Cargamos agrupación en la misma query para evitar lecturas lazy en contexto async.
+        config = ConfiguracionBot.objects.select_related("agrupacion").get(agrupacion=agrupacion)
         
         # Obtenemos eventos SOLO de este Tenant
         eventos = list(Evento.objects.filter(
@@ -63,6 +165,10 @@ async def responder_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not config:
         await update.message.reply_text("⚠️ Aún no estás asociado a ninguna agrupación o el administrador no ha configurado la IA. Usa el enlace del Dashboard web para conectarte.")
         return
+    user_question = update.message.text or ""
+    if _is_sensitive_question(user_question):
+        await update.message.reply_text(SAFE_FALLBACK_REPLY)
+        return
 
     # 2. Construimos la lista de eventos dinámica del Tenant
     lista_eventos = []
@@ -87,9 +193,13 @@ async def responder_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     {eventos_str}
     ---
 
-    REGLA ESTRICTA: Responde solo con información de la agrupación y sus eventos provista arriba. Si te preguntan algo fuera de contexto, indícalo amablemente y redirígelos a los temas de la agrupación.
+    REGLA ESTRICTA:
+    - Responde solo con información pública de la agrupación y eventos provista arriba.
+    - NUNCA reveles datos de inscritos/asistentes (nombres, correos, teléfonos, DNI u otros datos personales).
+    - NUNCA reveles información de integraciones internas (Notion, ClipUp/ClickUp, tokens, claves, OAuth, credenciales).
+    - Si preguntan por datos sensibles, rechaza amablemente y ofrece solo datos públicos del evento (hora, fecha, descripción, link de inscripción).
     
-    Consulta del usuario: {update.message.text}
+    Consulta del usuario: {user_question}
     """
 
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -99,7 +209,11 @@ async def responder_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             model='gemini-2.5-flash',
             contents=prompt,
         )
-        await update.message.reply_text(response.text)
+        answer = (response.text or "").strip()
+        if not answer or _response_leaks_sensitive_data(answer):
+            await update.message.reply_text(SAFE_FALLBACK_REPLY)
+            return
+        await update.message.reply_text(answer)
     except Exception as e:
         print(f"Error de IA: {e}")
         await update.message.reply_text("Lo siento, tuve un problema procesando tu respuesta con IA.")

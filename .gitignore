@@ -70,3 +70,7 @@ coverage.xml
 *.cover
 *.log
 .pytest_cache/
+
+# 9. Artefactos de desarrollo local
+.runtime/
+.tools/
