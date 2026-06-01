@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block extra_head %}
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>nav.bg-\[\#0A1929\] { display: none; }</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 absolute inset-0 bg-slate-50 z-50">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <a href="{% url 'landing' %}" class="inline-flex items-center justify-center mb-4 bg-[#0A1929] p-2 rounded-lg shadow-md hover:bg-[#112a46] transition-colors">
+            <i data-lucide="network" class="text-white h-8 w-8"></i>
+        </a>
+        <h2 class="text-3xl font-extrabold text-[#0A1929] tracking-tight">Registra tu Agrupación</h2>
+        <p class="text-sm text-slate-500 mt-2">Únete y automatiza la gestión con IA</p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-xl">
+        <div class="bg-white py-8 px-8 shadow-xl sm:rounded-2xl border border-slate-100">
+            
+            {% if error %}
+                <div class="mb-6 flex items-center gap-2 bg-red-50 text-red-700 p-3 rounded-lg text-sm font-semibold border border-red-200">
+                    <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                    {{ error }}
+                </div>
+            {% endif %}
+            
+            <form action="{% url 'register' %}" method="POST" class="space-y-5">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Nombre Oficial de la Agrupación</label>
+                    <input type="text" name="nombre_agrupacion" required placeholder="Ej. IEEE CIS UNI" class="w-full border border-slate-300 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#0A1929] focus:border-transparent transition-all">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Correo Electrónico (Será tu usuario)</label>
+                    <input type="email" name="email" required placeholder="contacto@agrupacion.com" class="w-full border border-slate-300 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#0A1929] focus:border-transparent transition-all">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Contraseña Segura</label>
+                    <input type="password" name="password" required placeholder="Mínimo 6 caracteres" minlength="6" class="w-full border border-slate-300 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#0A1929] focus:border-transparent transition-all">
+                </div>
+
+                <button type="submit" class="w-full py-3.5 px-4 mt-2 rounded-xl font-bold text-white bg-[#0A1929] hover:bg-[#112a46] transition-all shadow-md flex justify-center items-center gap-2">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i>
+                    Crear Cuenta Gratis
+                </button>
+            </form>
+            
+            <div class="mt-8 text-center text-sm pt-6 border-t border-slate-100">
+                <span class="text-slate-500">¿Tu agrupación ya está registrada?</span>
+                <a href="{% url 'login' %}" class="font-bold text-[#0A1929] hover:text-[#BA0C2F] ml-1 transition-colors">Inicia Sesión</a>
+            </div>
+        </div>
+    </div>
+</div>
+<script>lucide.createIcons();</script>
+{% endblock %}

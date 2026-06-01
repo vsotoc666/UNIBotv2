@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\sotoc\\\\Desktop\\\\unibot2.0\\\\UNIBotv2-funcionalidades-v1-recuperada\" -Recurse -Name)",
+      "PowerShell(head -100)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\sotoc\\\\Desktop\\\\unibot2.0\\\\UNIBotv2-funcionalidades-v1-recuperada\" -Recurse -Directory | ForEach-Object { $_.FullName } | Sort-Object | Select-Object -First 80)"
+    ]
+  }
+}

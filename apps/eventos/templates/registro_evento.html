@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-8 rounded shadow mt-10">
+    {% if success %}
+        <div class="bg-green-100 text-green-800 p-4 rounded mb-4">
+            ¡Registro completado con éxito para {{ evento.titulo }}!
+        </div>
+        <a href="/" class="text-indigo-600 hover:underline">Volver</a>
+    {% else %}
+        <h2 class="text-2xl font-bold mb-2">{{ evento.titulo }}</h2>
+        <p class="text-gray-600 mb-6">{{ evento.descripcion }}</p>
+        
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">Nombre Completo</label>
+                <input type="text" name="nombre" required class="w-full border p-2 rounded">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">Correo Electrónico</label>
+                <input type="email" name="correo" required class="w-full border p-2 rounded">
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-1">Teléfono</label>
+                <input type="text" name="telefono" required class="w-full border p-2 rounded">
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded font-bold">Inscribirme</button>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

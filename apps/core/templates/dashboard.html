@@ -1,0 +1,1295 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+    *, body { font-family: 'Inter', sans-serif; }
+
+    /* ══ IEEE CIS Color Tokens ══ */
+    #app {
+        --cis-dark:  #071a38;
+        --cis-navy:  #003087;
+        --cis-blue:  #0057b8;
+        --cis-cyan:  #00aeef;
+        --cis-cyan2: #4dcfff;
+    }
+
+    /* ── Calendario ── */
+    #calendar-container { min-height: 650px; height: 100%; }
+    .fc .fc-toolbar-title { font-size: 1.1rem; font-weight: 800; color: var(--cis-navy); letter-spacing: -0.02em; }
+    .fc-event { cursor: pointer; border-radius: 6px !important; padding: 2px 6px; border: none !important; font-size: 0.72rem; font-weight: 600; transition: transform 0.15s, opacity 0.15s; }
+    .fc-event:hover { opacity: 0.88; transform: translateY(-1px); }
+    .fc .fc-button { background: var(--cis-navy) !important; border-color: var(--cis-navy) !important; border-radius: 8px !important; font-size: 0.75rem !important; font-weight: 600 !important; padding: 6px 12px !important; transition: background 0.2s !important; }
+    .fc .fc-button:hover { background: var(--cis-cyan) !important; border-color: var(--cis-cyan) !important; }
+    .fc .fc-button-active { background: var(--cis-cyan) !important; border-color: var(--cis-cyan) !important; }
+    .fc .fc-daygrid-day-number { font-size: 0.8rem; font-weight: 600; color: #475569; }
+    .fc .fc-col-header-cell-cushion { font-size: 0.72rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .fc-theme-standard td, .fc-theme-standard th { border-color: #f1f5f9; }
+
+    /* ── Cards ── */
+    .card { background: #fff; border-radius: 18px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,48,135,.04), 0 4px 16px rgba(0,48,135,.07); transition: box-shadow 0.2s; }
+    .card:hover { box-shadow: 0 2px 8px rgba(0,48,135,.07), 0 8px 24px rgba(0,48,135,.11); }
+    .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .card-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .card-title { font-size: 0.95rem; font-weight: 800; color: var(--cis-navy); letter-spacing: -0.02em; }
+
+    /* ── Inputs ── */
+    .inp { width: 100%; border: 1.5px solid #e2e8f0; background: #f8fafc; border-radius: 10px; padding: 9px 12px; font-size: 0.8rem; color: #0f172a; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+    .inp:focus { border-color: var(--cis-cyan); background: #fff; box-shadow: 0 0 0 3px rgba(0,174,239,.12); }
+    .inp::placeholder { color: #94a3b8; }
+    .inp-label { display: block; font-size: 0.68rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 5px; }
+
+    /* ── Botones ── */
+    .btn-navy { background: linear-gradient(135deg, #003087 0%, #0057b8 100%); color: #fff; border-radius: 10px; font-weight: 700; font-size: 0.8rem; padding: 9px 16px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; border: none; cursor: pointer; }
+    .btn-navy:hover:not(:disabled) { background: linear-gradient(135deg, #00aeef 0%, #0088cc 100%); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,174,239,.35); }
+    .btn-navy:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-primary-full { background: linear-gradient(135deg, #003087 0%, #0057b8 100%); color: #fff; border-radius: 12px; font-weight: 800; font-size: 0.85rem; padding: 13px 20px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; cursor: pointer; border: none; }
+    .btn-primary-full:hover:not(:disabled) { background: linear-gradient(135deg, #00aeef 0%, #0088cc 100%); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,174,239,.38); }
+    .btn-primary-full:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+    .btn-ghost { background: #f1f5f9; color: #475569; border-radius: 8px; font-weight: 600; font-size: 0.75rem; padding: 7px 12px; display: inline-flex; align-items: center; gap: 5px; transition: all 0.18s; border: none; cursor: pointer; }
+    .btn-ghost:hover { background: #e2e8f0; color: #0f172a; }
+    .btn-green { background: #ecfdf5; color: #059669; border-radius: 8px; font-weight: 600; font-size: 0.75rem; padding: 7px 12px; display: inline-flex; align-items: center; gap: 5px; transition: all 0.18s; border: 1px solid #a7f3d0; cursor: pointer; }
+    .btn-green:hover { background: #d1fae5; }
+    .btn-danger-ghost { background: transparent; color: #cbd5e1; border-radius: 7px; padding: 5px; display: inline-flex; align-items: center; transition: all 0.15s; border: none; cursor: pointer; }
+    .btn-danger-ghost:hover { color: #ef4444; background: #fef2f2; }
+
+    /* ── Badges ── */
+    .badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 20px; padding: 2px 9px; font-size: 0.67rem; font-weight: 700; }
+    .badge-green { background: #ecfdf5; color: #059669; }
+    .badge-amber { background: #fffbeb; color: #d97706; }
+    .badge-blue { background: #eff6ff; color: #003087; }
+    .badge-slate { background: #f1f5f9; color: #64748b; }
+    .badge-red { background: #fef2f2; color: #dc2626; }
+    .badge-cyan { background: #e0f7ff; color: #0088cc; }
+
+    /* ── Status dot ── */
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .dot-green { background: #10b981; box-shadow: 0 0 0 2px #d1fae5; }
+    .dot-amber { background: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; }
+
+    /* ── Scrollbar ── */
+    .custom-scroll { scrollbar-width: thin; scrollbar-color: #94c8e8 transparent; }
+    .custom-scroll::-webkit-scrollbar { width: 4px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #94c8e8; border-radius: 4px; }
+
+    /* ── Integración card ── */
+    .integ-card { border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px; background: #fafafa; transition: border-color 0.2s; }
+    .integ-card:hover { border-color: #bae6fd; }
+    .integ-card.connected { border-color: #7dd3fc; background: #f0f9ff; }
+
+    /* ── Checkbox moderno ── */
+    input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--cis-navy); border-radius: 4px; cursor: pointer; }
+
+    /* ── Progress bar ── */
+    .progress-bar { height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #003087, #00aeef); border-radius: 99px; transition: width 0.4s ease; }
+
+    /* ── Tabla asistencia ── */
+    .att-table thead { background: linear-gradient(to right, #eff6ff, #e0f2fe); }
+    .att-table th { padding: 8px 12px; font-size: 0.68rem; font-weight: 700; color: #0057b8; text-transform: uppercase; letter-spacing: 0.07em; text-align: left; }
+    .att-table td { padding: 8px 12px; font-size: 0.78rem; color: #334155; }
+    .att-table tr { border-top: 1px solid #f1f5f9; transition: background 0.15s; }
+    .att-table tr:hover { background: #f0f9ff; }
+
+    /* ── Empty state ── */
+    .empty-state { text-align: center; padding: 28px 16px; }
+    .empty-state svg { opacity: 0.3; margin: 0 auto 10px; display: block; }
+    .empty-state p { font-size: 0.78rem; color: #94a3b8; font-weight: 500; }
+
+    /* ── IEEE CIS badge (watermark en cards) ── */
+    .cis-badge {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: linear-gradient(135deg, #003087, #00aeef);
+        color: #fff; border-radius: 20px; padding: 2px 10px 2px 6px;
+        font-size: 0.6rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .animate-spin { animation: spin 1s linear infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .animate-pulse { animation: pulse 2s cubic-bezier(.4,0,.6,1) infinite; }
+
+    [v-cloak] { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="app" class="grid grid-cols-1 lg:grid-cols-12 gap-5 pb-12" v-cloak>
+
+    <!-- ══════════════════════════ SIDEBAR ══════════════════════════ -->
+    <div class="lg:col-span-4 space-y-5 flex flex-col">
+
+        <!-- ── UNIBot IA ── -->
+        <div class="card p-6">
+            <div class="card-header">
+                <img src="{% static 'bot.png' %}" alt="IEEE CIS"
+                     class="h-9 w-auto object-contain"
+                     style="filter:drop-shadow(0 0 6px rgba(0,174,239,.45))"
+                     onerror="this.style.display='none';document.getElementById('bot-icon-fallback').style.display='flex'">
+                <div id="bot-icon-fallback" class="card-icon" style="display:none;background:linear-gradient(135deg,#003087,#0057b8);">
+                    <i data-lucide="bot" class="w-4 h-4 text-white"></i>
+                </div>
+                <div>
+                    <p class="card-title">Mi Bot</p>
+                    <p class="text-[11px] text-slate-400 font-medium">· Telegram ·</p>
+                </div>
+            </div>
+
+            <div v-if="!djangoState.botRequested" class="text-center py-3">
+                <div class="mb-5 p-4 rounded-xl bg-slate-50 border border-slate-100 text-left">
+                    <p class="text-sm text-slate-600 leading-relaxed">Activa tu asistente de IA para responder dudas en Telegram sobre tu agrupación.</p>
+                </div>
+                <form method="POST" action="">
+                    {% csrf_token %}
+                    <button type="submit" name="solicitar_bot" class="btn-primary-full">
+                        <i data-lucide="power" class="w-4 h-4"></i> Activar UNIBot
+                    </button>
+                </form>
+            </div>
+
+            <div v-else class="space-y-5">
+                <div class="space-y-3">
+                    <div>
+                        <label class="inp-label">Nombre del Asistente</label>
+                        <input v-model="botForm.nombre" type="text" class="inp" placeholder="Ej. Asistente UNIBot">
+                    </div>
+                    <div>
+                        <label class="inp-label">Personalidad</label>
+                        <select v-model="botForm.tono" class="inp">
+                            <option value="amigable">Amigable y Cercano 😊</option>
+                            <option value="formal">Formal y Académico 👔</option>
+                            <option value="tecnico">Técnico y Directo ⚙️</option>
+                        </select>
+                    </div>
+                    <button @click="guardarConfiguracionBot" :disabled="ui.savingBot" class="btn-navy w-full justify-center py-2.5">
+                        <i v-if="!ui.savingBot" data-lucide="save" class="w-4 h-4"></i>
+                        <i v-else data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+                        [[ ui.savingBot ? 'Guardando...' : 'Guardar Perfil' ]]
+                    </button>
+                </div>
+
+                <div class="border-t border-slate-100 pt-5">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="inp-label mb-0">Conocimiento (PDFs)</label>
+                        <span class="badge badge-blue">[[ documentos.length || 0 ]] archivos</span>
+                    </div>
+
+                    <div class="space-y-2 mb-4 max-h-[200px] overflow-y-auto pr-1 custom-scroll">
+                        <div v-for="doc in documentos" :key="doc.id" class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100 group hover:border-slate-200 transition-colors">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <div class="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+                                    <i data-lucide="file-text" class="w-3.5 h-3.5 text-red-400"></i>
+                                </div>
+                                <span class="text-xs text-slate-700 truncate font-medium" :title="doc.nombre">[[ doc.nombre ]]</span>
+                                <span v-if="!doc.procesado" class="badge badge-amber animate-pulse">
+                                    <i data-lucide="loader-2" class="w-2.5 h-2.5 animate-spin"></i>
+                                    Entrenando
+                                </span>
+                                <span v-else class="badge badge-green">
+                                    <i data-lucide="check" class="w-2.5 h-2.5"></i>
+                                    Listo
+                                </span>
+                            </div>
+                            <button @click="borrarDocumento(doc.id)" class="btn-danger-ghost opacity-0 group-hover:opacity-100">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        <div v-if="documentos.length === 0" class="empty-state border-2 border-dashed border-slate-100 rounded-xl py-6">
+                            <i data-lucide="file-plus" class="w-6 h-6 text-slate-300 mx-auto mb-2"></i>
+                            <p>Sin documentos aún.</p>
+                        </div>
+                    </div>
+
+                    <input type="file" ref="pdfInput" @change="subirNuevoDocumento" accept=".pdf" class="hidden" id="fileUpload">
+                    <label for="fileUpload" class="cursor-pointer w-full btn-green justify-center py-2.5 text-sm font-bold flex">
+                        <i data-lucide="plus-circle" class="w-4 h-4 mr-1.5"></i>
+                        [[ ui.uploadingPdf ? 'Subiendo...' : 'Agregar PDF' ]]
+                    </label>
+                </div>
+
+                <div v-if="ui.botMessage" class="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg" :class="ui.botError ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'">
+                    <i :data-lucide="ui.botError ? 'alert-circle' : 'check-circle'" class="w-3.5 h-3.5 shrink-0"></i>
+                    [[ ui.botMessage ]]
+                </div>
+
+                {% if telegram_link %}
+                <div class="border-t border-slate-100 pt-4 mt-1">
+                    <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Link público del bot</p>
+                    <p class="text-[10px] text-slate-400 mb-2">Comparte este link para que el público pueda hablarle a tu bot en Telegram.</p>
+                    <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1.5">
+                        <a href="{{ telegram_link }}" target="_blank" class="text-[10px] w-full bg-transparent border-none outline-none text-blue-600 px-1 font-medium truncate hover:underline">
+                            {{ telegram_link }}
+                        </a>
+                        <button onclick="navigator.clipboard.writeText('{{ telegram_link }}'); this.innerHTML='<i data-lucide=\'check\' class=\'w-3.5 h-3.5\'></i>'; lucide.createIcons(); setTimeout(()=>{ this.innerHTML='<i data-lucide=\'copy\' class=\'w-3.5 h-3.5\'></i>'; lucide.createIcons(); }, 2000);" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0" title="Copiar link">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ── Integraciones ── -->
+        <div id="integraciones" class="card p-6">
+            <div class="card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg,#003087,#0057b8);">
+                    <i data-lucide="plug-zap" class="w-4 h-4 text-white"></i>
+                </div>
+                <div>
+                    <p class="card-title">Integraciones</p>
+                    <p class="text-[11px] text-slate-400 font-medium">Conecta tus herramientas externas</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <!-- Google -->
+                <div class="integ-card" :class="botForm.googleConectado ? 'connected' : ''">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="dot" :class="botForm.googleConectado ? 'dot-green' : 'dot-amber'"></span>
+                            <p class="text-xs font-bold text-slate-700">Google</p>
+                        </div>
+                        <span class="badge" :class="botForm.googleConectado ? 'badge-green' : 'badge-amber'">
+                            [[ botForm.googleConectado ? 'Conectado' : 'Sin conectar' ]]
+                        </span>
+                    </div>
+                    <p v-if="botForm.googleConectado" class="text-[11px] text-slate-600 mb-2">
+                        Cuenta: <span class="font-semibold text-slate-800">[[ botForm.googleEmail ]]</span>
+                    </p>
+                    <p v-else class="text-[11px] text-slate-500 mb-2">Autoriza Google para enviar confirmaciones automáticas.</p>
+                    <div class="flex gap-2 flex-wrap">
+                        <a href="/auth/google/start/" class="btn-navy text-[11px] py-1.5 px-3">
+                            <i data-lucide="mail-check" class="w-3.5 h-3.5"></i>
+                            [[ botForm.googleConectado ? 'Reconectar' : 'Conectar Google' ]]
+                        </a>
+                        <button v-if="botForm.googleConectado" @click="desconectarGoogle" type="button" class="btn-ghost text-[11px] py-1.5 px-3">
+                            <i data-lucide="unlink" class="w-3.5 h-3.5"></i> Desconectar
+                        </button>
+                    </div>
+                    <div v-if="botForm.googleConectado" class="mt-3 p-3 rounded-xl border border-emerald-100 bg-white space-y-2">
+                        <label class="flex items-center gap-2 text-[11px] text-slate-700 cursor-pointer">
+                            <input type="checkbox" v-model="botForm.googleCalendarEnabled">
+                            <span class="font-medium">Usar Google Calendar en el dashboard</span>
+                        </label>
+                        <input v-model.trim="botForm.googleCalendarId" type="text" placeholder="ID calendario (vacío = tu correo)" class="inp text-[11px] py-1.5">
+                        <button @click="guardarGoogleCalendarConfig" :disabled="ui.savingGoogleCalendar" type="button" class="btn-navy text-[11px] py-1.5 px-3">
+                            [[ ui.savingGoogleCalendar ? 'Guardando...' : 'Guardar Calendar' ]]
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Notion -->
+                <div class="integ-card" :class="botForm.notionConectado ? 'connected' : ''">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="dot" :class="botForm.notionConectado ? 'dot-green' : 'dot-amber'"></span>
+                            <p class="text-xs font-bold text-slate-700">Notion</p>
+                        </div>
+                        <span class="badge" :class="botForm.notionConectado ? 'badge-green' : 'badge-amber'">
+                            [[ botForm.notionConectado ? 'Conectado' : 'Sin conectar' ]]
+                        </span>
+                    </div>
+                    <p v-if="botForm.notionConectado" class="text-[11px] text-slate-600 mb-2">
+                        Workspace: <span class="font-semibold text-slate-800">[[ botForm.notionWorkspaceNombre || 'Sin nombre' ]]</span>
+                    </p>
+                    <p v-else class="text-[11px] text-slate-500 mb-2">Registra inscritos y asistencia en tu base de Notion.</p>
+                    <div class="flex gap-2">
+                        <a href="/auth/notion/start/" class="btn-navy text-[11px] py-1.5 px-3">
+                            <i data-lucide="book-open-check" class="w-3.5 h-3.5"></i>
+                            [[ botForm.notionConectado ? 'Reconectar' : 'Conectar Notion' ]]
+                        </a>
+                        <button v-if="botForm.notionConectado" @click="desconectarNotion" type="button" class="btn-ghost text-[11px] py-1.5 px-3">
+                            <i data-lucide="unlink" class="w-3.5 h-3.5"></i> Desconectar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ClickUp -->
+                <div class="integ-card" :class="botForm.clipupConectado ? 'connected' : ''">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="dot" :class="botForm.clipupConectado ? 'dot-green' : 'dot-amber'"></span>
+                            <p class="text-xs font-bold text-slate-700">ClickUp</p>
+                        </div>
+                        <span class="badge" :class="botForm.clipupConectado ? 'badge-green' : 'badge-amber'">
+                            [[ botForm.clipupConectado ? 'Conectado' : 'Sin conectar' ]]
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mb-2">Crea tareas automáticas al registrar inscritos.</p>
+                    <div v-if="!botForm.clipupConectado">
+                        <a href="/auth/clipup/start/" class="btn-navy text-[11px] py-1.5 px-3">
+                            <i data-lucide="link-2" class="w-3.5 h-3.5"></i> Conectar ClickUp
+                        </a>
+                    </div>
+                    <div v-else class="space-y-2">
+                        <select v-model="botForm.clipupListId" class="inp text-[11px] py-1.5">
+                            <option value="">— Selecciona una lista —</option>
+                            <option v-for="opt in clipupLists" :key="`clip-${opt.id}`" :value="opt.id">[[ opt.label ]]</option>
+                        </select>
+                        <div class="flex gap-2 flex-wrap">
+                            <button @click="guardarClipUpConfig" :disabled="ui.savingClipup" type="button" class="btn-navy text-[11px] py-1.5 px-3">
+                                [[ ui.savingClipup ? 'Guardando...' : 'Guardar lista' ]]
+                            </button>
+                            <button @click="desconectarClipUp" type="button" class="btn-ghost text-[11px] py-1.5 px-3">
+                                Desconectar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="ui.integracionMessage" class="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg" :class="ui.integracionError ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'">
+                    <i :data-lucide="ui.integracionError ? 'alert-circle' : 'check-circle'" class="w-3.5 h-3.5 shrink-0"></i>
+                    [[ ui.integracionMessage ]]
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Agendar Evento ── -->
+        <div class="card p-6">
+            <div class="card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg,#00aeef,#0088cc);">
+                    <i data-lucide="calendar-plus" class="w-4 h-4 text-white"></i>
+                </div>
+                <div>
+                    <p class="card-title">Agendar Evento</p>
+                    <p class="text-[11px] text-slate-400 font-medium">Crea y publica un nuevo evento</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="inp-label">Título del evento</label>
+                    <input v-model="eventoForm.titulo" placeholder="Ej. Taller de Arduino Básico" class="inp">
+                </div>
+                <div>
+                    <label class="inp-label">Descripción</label>
+                    <textarea v-model="eventoForm.descripcion" placeholder="¿De qué trata el evento?..." class="inp h-20 resize-none"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="inp-label">Inicio</label>
+                        <input v-model="eventoForm.fecha_inicio" type="datetime-local" class="inp">
+                    </div>
+                    <div>
+                        <label class="inp-label">Fin</label>
+                        <input v-model="eventoForm.fecha_fin" type="datetime-local" class="inp">
+                    </div>
+                </div>
+                <div>
+                    <label class="inp-label">Tipo de inscripción</label>
+                    <select v-model="eventoForm.tipo_inscripcion" class="inp">
+                        <option value="interno">Formulario UNIBot (por defecto)</option>
+                        <option value="google_form">Usar mi Google Form</option>
+                    </select>
+                </div>
+                <div v-if="eventoForm.tipo_inscripcion === 'google_form'" class="space-y-3">
+                    <!-- Opción A: Google Forms API (requiere Google conectado) -->
+                    <div class="space-y-1.5">
+                        <label class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Opción A — Con Google conectado</label>
+                        <input v-model.trim="eventoForm.form_externo_url" placeholder="Link de edición del Form (/forms/d/.../edit)" class="inp text-xs">
+                        <div class="text-[11px] p-2.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 flex gap-2">
+                            <i data-lucide="info" class="w-3.5 h-3.5 shrink-0 mt-0.5"></i>
+                            Requiere Google conectado en Integraciones. Usa el link de <strong>edición</strong> (no el público).
+                        </div>
+                    </div>
+                    <!-- Separador -->
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1 border-t border-slate-200"></div>
+                        <span class="text-[10px] text-slate-400 font-medium">O</span>
+                        <div class="flex-1 border-t border-slate-200"></div>
+                    </div>
+                    <!-- Opción B: Google Sheets público (sin Google conectado) -->
+                    <div class="space-y-1.5">
+                        <label class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Opción B — Sin Google conectado</label>
+                        <input v-model.trim="eventoForm.sheet_respuestas_url" placeholder="Link de la hoja de respuestas de Google Sheets" class="inp text-xs">
+                        <div class="text-[11px] p-2.5 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 flex gap-2">
+                            <i data-lucide="info" class="w-3.5 h-3.5 shrink-0 mt-0.5"></i>
+                            La hoja de Sheets debe ser <strong>pública</strong> (Compartir → "Cualquiera con el link"). No requiere Google conectado.
+                        </div>
+                    </div>
+                </div>
+                <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer select-none">
+                    <input type="checkbox" v-model="eventoForm.enviar_confirmacion_email">
+                    <span class="font-medium">Enviar confirmación por correo a inscritos</span>
+                </label>
+                <div v-if="eventoForm.enviar_confirmacion_email && !botForm.googleConectado" class="text-[11px] p-2.5 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 flex gap-2">
+                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5 shrink-0 mt-0.5"></i>
+                    Activa Google en "Integraciones" para habilitar el envío real.
+                </div>
+                <button @click="crearEvento" :disabled="ui.savingEvento" class="btn-primary-full mt-1">
+                    <i v-if="ui.savingEvento" data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+                    <i v-else data-lucide="send" class="w-4 h-4"></i>
+                    [[ ui.savingEvento ? 'Publicando...' : 'Publicar Evento' ]]
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Links Públicos ── -->
+        <div class="card p-6 flex-grow">
+            <div class="card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg,#0057b8,#003087);">
+                    <i data-lucide="link" class="w-4 h-4 text-white"></i>
+                </div>
+                <div>
+                    <p class="card-title">Links Públicos</p>
+                    <p class="text-[11px] text-slate-400 font-medium">Comparte el acceso a tus eventos</p>
+                </div>
+            </div>
+
+            <div v-if="ui.loadingEventos" class="flex items-center justify-center py-8 gap-2 text-slate-400">
+                <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
+                <span class="text-sm">Cargando eventos...</span>
+            </div>
+
+            <div v-else class="space-y-2.5 max-h-[320px] overflow-y-auto pr-1 custom-scroll">
+                <div v-for="ev in eventos" :key="ev.id" class="group p-3 bg-slate-50 rounded-2xl border border-slate-100 hover:border-slate-200 hover:bg-white transition-all duration-200">
+                    <div class="flex items-start justify-between gap-2 mb-2.5">
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-slate-800 truncate leading-tight" :title="ev.title">[[ ev.title ]]</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">
+                                [[ ev.inscritos_count || 0 ]] inscritos · [[ ev.presentes_count || 0 ]] presentes
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <span class="badge" :class="ev.tipo_inscripcion === 'google_form' ? 'badge-blue' : 'badge-slate'">
+                                [[ ev.tipo_inscripcion === 'google_form' ? 'G·Form' : 'UNIBot' ]]
+                            </span>
+                            <button @click="eliminarEvento(ev)" class="btn-danger-ghost ml-0.5 opacity-0 group-hover:opacity-100" title="Eliminar evento">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1.5">
+                        <input readonly :value="urlInscripcion(ev)" class="text-[10px] w-full bg-transparent border-none outline-none text-blue-600 px-1 font-medium cursor-text select-all">
+                        <button @click="copiarAlPortapapeles(urlInscripcion(ev))" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" title="Copiar link">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <a :href="urlInscripcion(ev)" target="_blank" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" title="Abrir en nueva pestaña">
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        </a>
+                    </div>
+                </div>
+                <div v-if="eventos.length === 0" class="empty-state">
+                    <i data-lucide="calendar-x" class="w-10 h-10 text-slate-300 mx-auto mb-3"></i>
+                    <p class="font-semibold text-slate-400">Aún no hay eventos programados.</p>
+                    <p class="text-[11px] text-slate-300 mt-1">Crea tu primer evento arriba.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Asistencia de inscritos ── -->
+        <div class="card p-6">
+            <div class="card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg,#059669,#047857);">
+                    <i data-lucide="users" class="w-4 h-4 text-white"></i>
+                </div>
+                <div>
+                    <p class="card-title">Asistencia</p>
+                    <p class="text-[11px] text-slate-400 font-medium">Control de inscritos por evento</p>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="inp-label">Selecciona un evento</label>
+                <select v-model="selectedAsistenciaEventId" @change="onSeleccionarEventoAsistencia" class="inp">
+                    <option value="">— Selecciona un evento —</option>
+                    <option v-for="ev in eventos" :key="`asis-${ev.id}`" :value="String(ev.id)">
+                        [[ ev.title ]] · [[ ev.inscritos_count || 0 ]] inscritos
+                    </option>
+                </select>
+            </div>
+
+            <div v-if="selectedAsistenciaEventId" class="mb-3 space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-600 font-semibold">Presentes: <span class="text-emerald-600">[[ resumenAsistencia.presentes ]]</span> / [[ resumenAsistencia.total ]]</span>
+                    <span v-if="resumenAsistencia.total > 0" class="text-slate-400">[[ Math.round(resumenAsistencia.presentes/resumenAsistencia.total*100) ]]%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" :style="`width:${resumenAsistencia.total > 0 ? Math.round(resumenAsistencia.presentes/resumenAsistencia.total*100) : 0}%`"></div>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap pt-1">
+                    <button v-if="eventoAsistenciaActual && eventoAsistenciaActual.tipo_inscripcion === 'google_form'" @click="sincronizarInscritos" :disabled="ui.syncingInscritos" class="btn-ghost text-xs py-1.5">
+                        <i :data-lucide="ui.syncingInscritos ? 'loader-2' : 'refresh-cw'" class="w-3.5 h-3.5" :class="ui.syncingInscritos ? 'animate-spin':''"></i>
+                        [[ ui.syncingInscritos ? 'Sincronizando...' : 'Sincronizar' ]]
+                    </button>
+                    <button @click="descargarInscritosExcel" type="button" class="btn-green text-xs py-1.5">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i> Excel
+                    </button>
+                    <button v-if="eventoAsistenciaActual" @click="cerrarEventoActual" type="button" class="btn-navy text-xs py-1.5">
+                        <i data-lucide="file-check-2" class="w-3.5 h-3.5"></i> Cerrar + Acta
+                    </button>
+                </div>
+            </div>
+
+            <div v-if="ui.loadingInscritos" class="flex items-center gap-2 text-xs text-slate-400 py-3">
+                <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Cargando inscritos...
+            </div>
+            <div v-else-if="selectedAsistenciaEventId && inscritos.length" class="max-h-64 overflow-y-auto rounded-xl border border-slate-100 custom-scroll">
+                <table class="w-full att-table">
+                    <thead>
+                        <tr>
+                            <th class="w-10">✓</th>
+                            <th>Nombre</th>
+                            <th>Correo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="ins in inscritos" :key="ins.id">
+                            <td>
+                                <input type="checkbox" :checked="ins.asistio" @change="toggleAsistencia(ins, $event.target.checked)">
+                            </td>
+                            <td class="font-medium">[[ ins.nombre ]]</td>
+                            <td class="truncate max-w-[140px] text-slate-400" :title="ins.correo">[[ ins.correo ]]</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p v-else-if="selectedAsistenciaEventId" class="text-xs text-slate-400 py-3 text-center">No hay inscritos todavía para este evento.</p>
+
+            <div v-if="ui.asistenciaMessage" class="mt-2 flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg" :class="ui.asistenciaError ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'">
+                <i :data-lucide="ui.asistenciaError ? 'alert-circle' : 'check-circle'" class="w-3.5 h-3.5 shrink-0"></i>
+                [[ ui.asistenciaMessage ]]
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════ MAIN / CALENDARIO ══════════════════════════ -->
+    <div class="lg:col-span-8 flex flex-col">
+        <div class="card p-6 flex-grow">
+            <div class="card-header mb-5">
+                <div class="card-icon" style="background: linear-gradient(135deg,#003087,#0057b8);">
+                    <i data-lucide="calendar-days" class="w-4 h-4 text-white"></i>
+                </div>
+                <div>
+                    <p class="card-title">Calendario de Eventos</p>
+                    <p class="text-[11px] text-slate-400 font-medium">Visualiza y gestiona tu agenda</p>
+                </div>
+            </div>
+
+            <div v-if="usaCalendarioGoogle" class="mb-3 text-[11px] px-3 py-2 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 flex items-center gap-2">
+                <i data-lucide="info" class="w-3.5 h-3.5 shrink-0"></i>
+                Modo Google Calendar activo: los cambios se gestionan en tu cuenta de Google.
+            </div>
+            <div v-if="usaCalendarioGoogle">
+                <iframe
+                    :src="googleCalendarEmbedUrl"
+                    class="w-full min-h-[650px] rounded-2xl border border-slate-100"
+                    frameborder="0"
+                    scrolling="no"
+                ></iframe>
+            </div>
+            <div v-else id="calendar-container" class="rounded-2xl overflow-hidden">
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getCsrfToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === ('csrftoken=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue || '{{ csrf_token }}';
+    }
+
+    const DJANGO_STATE = {
+        botRequested: '{{ solicitud_bot|yesno:"true,false" }}' === 'true',
+        botNombre: '{{ config_bot.nombre_bot|default:"Asistente UNIBot"|escapejs }}',
+        botTono: '{{ config_bot.tono|default:"amigable"|escapejs }}',
+        googleEmail: '{{ config_bot.google_email|default:""|escapejs }}',
+        googleConnected: '{{ config_bot.google_refresh_token|default:""|yesno:"true,false" }}' === 'true',
+        googleOauthStatus: '{{ google_oauth_status|default:""|escapejs }}',
+        notionConnected: '{{ config_bot.notion_access_token|default:""|yesno:"true,false" }}' === 'true',
+        notionWorkspaceName: '{{ config_bot.notion_workspace_name|default:""|escapejs }}',
+        notionOauthStatus: '{{ notion_oauth_status|default:""|escapejs }}',
+        clipupOauthStatus: '{{ clipup_oauth_status|default:""|escapejs }}',
+        googleCalendarEnabled: '{{ config_bot.google_calendar_enabled|yesno:"true,false" }}' === 'true',
+        googleCalendarId: '{{ config_bot.google_calendar_id|default:""|escapejs }}',
+        clipupConnected: '{{ config_bot.clipup_api_token|default:""|yesno:"true,false" }}' === 'true',
+        clipupListId: '{{ config_bot.clipup_list_id|default:""|escapejs }}',
+        host: window.location.origin
+    };
+
+    const { createApp, nextTick } = Vue;
+
+    createApp({
+        compilerOptions: { delimiters: ['[[', ']]'] },
+        data() {
+            return {
+                djangoState: DJANGO_STATE,
+
+                botForm: {
+                    nombre: DJANGO_STATE.botNombre,
+                    tono: DJANGO_STATE.botTono,
+                    googleConectado: DJANGO_STATE.googleConnected,
+                    googleEmail: DJANGO_STATE.googleEmail,
+                    googleCalendarEnabled: DJANGO_STATE.googleCalendarEnabled,
+                    googleCalendarId: DJANGO_STATE.googleCalendarId,
+                    clipupConectado: DJANGO_STATE.clipupConnected,
+                    clipupListId: DJANGO_STATE.clipupListId,
+                    notionConectado: DJANGO_STATE.notionConnected,
+                    notionWorkspaceNombre: DJANGO_STATE.notionWorkspaceName
+                },
+
+                eventoForm: {
+                    titulo: '',
+                    descripcion: '',
+                    fecha_inicio: '',
+                    fecha_fin: '',
+                    tipo_inscripcion: 'interno',
+                    form_externo_url: '',
+                    sheet_respuestas_url: '',
+                    enviar_confirmacion_email: false
+                },
+                selectedAsistenciaEventId: '',
+
+                eventos: [],
+                documentos: [], // Sistema RAG
+                calendarInstance: null,
+                inscritos: [],
+                clipupLists: [],
+                autoSyncTimerId: null,
+                googleCalendarRefreshTimerId: null,
+                pollingInterval: null, // Polling para RAG
+
+                ui: {
+                    savingBot: false,
+                    botMessage: '',
+                    botError: false,
+                    integracionMessage: '',
+                    integracionError: false,
+                    savingEvento: false,
+                    loadingEventos: true,
+                    loadingInscritos: false,
+                    syncingInscritos: false,
+                    savingGoogleCalendar: false,
+                    savingClipup: false,
+                    asistenciaMessage: '',
+                    asistenciaError: false,
+                    uploadingPdf: false // Sistema RAG
+                }
+            }
+        },
+        computed: {
+            usaCalendarioGoogle() {
+                return this.botForm.googleConectado && this.botForm.googleCalendarEnabled;
+            },
+            googleCalendarEmbedUrl() {
+                const calendarId = encodeURIComponent((this.botForm.googleCalendarId || this.botForm.googleEmail || '').trim());
+                return `https://calendar.google.com/calendar/embed?src=${calendarId}&ctz=America%2FLima`;
+            },
+            resumenAsistencia() {
+                const total = this.inscritos.length;
+                const presentes = this.inscritos.filter(i => i.asistio).length;
+                return { total, presentes };
+            },
+            eventoAsistenciaActual() {
+                return this.eventos.find(e => String(e.id) === String(this.selectedAsistenciaEventId)) || null;
+            }
+        },
+        mounted() {
+            this.procesarEstadoOAuth();
+            this.procesarEstadoNotion();
+            this.procesarEstadoClipup();
+            this.fetchEventos().then(() => {
+                nextTick(() => {
+                    this.initCalendar();
+                    lucide.createIcons();
+                    this.startAutoSyncInscritos();
+                    this.startGoogleCalendarAutoRefresh();
+                });
+            });
+            if (this.botForm.clipupConectado) {
+                this.cargarClipupLists();
+            }
+            window.addEventListener('focus', this.onWindowFocusRefreshGoogleCalendar);
+
+            // Iniciar RAG fetching y polling
+            this.fetchDocumentos();
+            this.pollingInterval = setInterval(this.fetchDocumentos, 5000);
+        },
+        unmounted() {
+            this.stopAutoSyncInscritos();
+            this.stopGoogleCalendarAutoRefresh();
+            if(this.pollingInterval) clearInterval(this.pollingInterval);
+            window.removeEventListener('focus', this.onWindowFocusRefreshGoogleCalendar);
+        },
+        updated() {
+            lucide.createIcons();
+        },
+        methods: {
+            // === MÉTODOS SISTEMA RAG ===
+            async fetchDocumentos() {
+                try {
+                    const res = await fetch('/api/agrupaciones/documentos/');
+                    if (res.ok) this.documentos = await res.json();
+                } catch(e) { console.error("Error cargando docs", e); }
+            },
+
+            async subirNuevoDocumento(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                this.ui.uploadingPdf = true;
+                const formData = new FormData();
+                formData.append('archivo', file);
+
+                try {
+                    const res = await fetch('/api/agrupaciones/documentos/subir/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCsrfToken() },
+                        body: formData
+                    });
+                    if (res.ok) {
+                        await this.fetchDocumentos();
+                        this.ui.botError = false;
+                        this.ui.botMessage = 'Archivo subido correctamente.';
+                    } else {
+                        alert("Error al subir archivo.");
+                    }
+                } catch (e) { console.error(e); }
+                finally {
+                    this.ui.uploadingPdf = false;
+                    setTimeout(() => this.ui.botMessage = '', 3000);
+                }
+            },
+
+            async borrarDocumento(id) {
+                if(!confirm("¿Seguro que quieres borrar este documento? El bot ya no tendrá este conocimiento.")) return;
+                try {
+                    await fetch(`/api/agrupaciones/documentos/${id}/`, {
+                        method: 'DELETE',
+                        headers: { 'X-CSRFToken': getCsrfToken() }
+                    });
+                    this.fetchDocumentos();
+                } catch(e) { console.error(e); }
+            },
+
+            async guardarConfiguracionBot() {
+                this.ui.savingBot = true;
+                this.ui.botMessage = '';
+
+                const formData = new FormData();
+                formData.append('nombre_bot', this.botForm.nombre);
+                formData.append('tono', this.botForm.tono);
+
+                try {
+                    const res = await fetch('/api/agrupaciones/bot-config/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCsrfToken() },
+                        body: formData
+                    });
+
+                    if (res.ok) {
+                        this.ui.botError = false;
+                        this.ui.botMessage = 'Configuración guardada.';
+                    } else {
+                        throw new Error();
+                    }
+                } catch (e) {
+                    this.ui.botError = true;
+                    this.ui.botMessage = 'Error al guardar.';
+                } finally {
+                    this.ui.savingBot = false;
+                    setTimeout(() => this.ui.botMessage = '', 3000);
+                }
+            },
+
+            // === MÉTODOS EVENTOS E INTEGRACIONES ===
+            async cerrarEventoActual() {
+                if (!this.selectedAsistenciaEventId) return;
+                const comentarios = window.prompt('Comentarios de cierre para el acta de Notion:', '') || '';
+                try {
+                    const res = await fetch(`/api/eventos/${this.selectedAsistenciaEventId}/cerrar/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                        body: JSON.stringify({ comentarios })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.status !== 'success') {
+                        throw new Error(data.message || 'No se pudo cerrar el evento.');
+                    }
+                    const link = data.acta_notion_url ? `\nActa Notion: ${data.acta_notion_url}` : '';
+                    alert(`Evento cerrado.\nInscritos: ${data.inscritos}\nPresentes: ${data.presentes}\nAsistencia: ${data.porcentaje_asistencia}%${link}`);
+                    await this.fetchEventos();
+                } catch (e) {
+                    alert(e.message || 'Error cerrando evento.');
+                }
+            },
+            refreshGoogleCalendarIframe() {
+                const iframe = document.querySelector('iframe[src*="calendar.google.com/calendar/embed"]');
+                if (!iframe) return;
+                const currentSrc = iframe.getAttribute('src') || '';
+                if (!currentSrc) return;
+                const baseSrc = currentSrc.split('&_ts=')[0];
+                iframe.setAttribute('src', `${baseSrc}&_ts=${Date.now()}`);
+            },
+            onWindowFocusRefreshGoogleCalendar() {
+                if (!this.usaCalendarioGoogle) return;
+                this.refreshGoogleCalendarIframe();
+            },
+            startGoogleCalendarAutoRefresh() {
+                if (this.googleCalendarRefreshTimerId) return;
+                this.googleCalendarRefreshTimerId = setInterval(() => {
+                    if (!this.usaCalendarioGoogle) return;
+                    this.refreshGoogleCalendarIframe();
+                }, 30000);
+            },
+            stopGoogleCalendarAutoRefresh() {
+                if (!this.googleCalendarRefreshTimerId) return;
+                clearInterval(this.googleCalendarRefreshTimerId);
+                this.googleCalendarRefreshTimerId = null;
+            },
+            procesarEstadoOAuth() {
+                const status = this.djangoState.googleOauthStatus;
+                if (!status) return;
+                if (status === 'connected') {
+                    this.ui.integracionError = false;
+                    this.ui.integracionMessage = 'Cuenta de Google conectada correctamente.';
+                    this.botForm.googleConectado = true;
+                    this.botForm.googleEmail = this.djangoState.googleEmail || this.botForm.googleEmail;
+                    if (!this.botForm.googleCalendarId) {
+                        this.botForm.googleCalendarId = this.botForm.googleEmail;
+                    }
+                } else {
+                    this.ui.integracionError = true;
+                    if (status === 'missing_config') this.ui.integracionMessage = 'Faltan GOOGLE_CLIENT_ID / SECRET / REDIRECT_URI en .env.';
+                    else if (status === 'state_error') this.ui.integracionMessage = 'Sesión OAuth inválida. Intenta conectar de nuevo.';
+                    else if (status === 'cancelled') this.ui.integracionMessage = 'Conexión con Google cancelada.';
+                    else this.ui.integracionMessage = 'No se pudo conectar con Google.';
+                }
+                setTimeout(() => this.ui.integracionMessage = '', 5000);
+            },
+            procesarEstadoNotion() {
+                const status = this.djangoState.notionOauthStatus;
+                if (!status) return;
+                if (status === 'connected') {
+                    this.ui.integracionError = false;
+                    this.ui.integracionMessage = 'Cuenta de Notion conectada correctamente.';
+                    this.botForm.notionConectado = true;
+                    this.botForm.notionWorkspaceNombre = this.djangoState.notionWorkspaceName || this.botForm.notionWorkspaceNombre;
+                } else {
+                    this.ui.integracionError = true;
+                    if (status === 'missing_config') this.ui.integracionMessage = 'Faltan NOTION_CLIENT_ID / SECRET / REDIRECT_URI en .env.';
+                    else if (status === 'state_error') this.ui.integracionMessage = 'Sesión OAuth de Notion inválida. Intenta conectar de nuevo.';
+                    else if (status === 'cancelled') this.ui.integracionMessage = 'Conexión con Notion cancelada.';
+                    else this.ui.integracionMessage = 'No se pudo conectar con Notion.';
+                }
+                setTimeout(() => this.ui.integracionMessage = '', 5000);
+            },
+            procesarEstadoClipup() {
+                const status = this.djangoState.clipupOauthStatus;
+                if (!status) return;
+                if (status === 'connected') {
+                    this.ui.integracionError = false;
+                    this.ui.integracionMessage = 'Cuenta de ClickUp conectada correctamente.';
+                    this.botForm.clipupConectado = true;
+                    this.cargarClipupLists();
+                } else {
+                    this.ui.integracionError = true;
+                    if (status === 'missing_config') this.ui.integracionMessage = 'Faltan ClickUP_CLIENT_ID / SECRET / REDIRECT_URI en .env.';
+                    else if (status === 'state_error') this.ui.integracionMessage = 'Sesión OAuth de ClickUp inválida. Intenta conectar de nuevo.';
+                    else if (status === 'cancelled') this.ui.integracionMessage = 'Conexión con ClickUp cancelada.';
+                    else this.ui.integracionMessage = 'No se pudo conectar con ClickUp.';
+                }
+                setTimeout(() => this.ui.integracionMessage = '', 5000);
+            },
+            async cargarClipupLists() {
+                if (!this.botForm.clipupConectado) return;
+                try {
+                    const res = await fetch('/api/agrupaciones/clipup-lists/');
+                    const data = await res.json();
+                    if (!res.ok || data.status !== 'success') throw new Error(data.message || 'No se pudieron cargar listas de ClickUp.');
+                    this.clipupLists = data.lists || [];
+                } catch (e) {
+                    this.clipupLists = [];
+                    this.ui.integracionError = true;
+                    this.ui.integracionMessage = e.message || 'Error cargando listas de ClickUp.';
+                    setTimeout(() => this.ui.integracionMessage = '', 5000);
+                }
+            },
+
+            async fetchEventos() {
+                this.ui.loadingEventos = true;
+                try {
+                    const response = await fetch('/api/eventos/dashboard-data/');
+                    if (!response.ok) throw new Error("Fallo al obtener eventos");
+                    const data = await response.json();
+                    this.eventos = data;
+
+                    if (this.calendarInstance) {
+                        const rawEvents = JSON.parse(JSON.stringify(this.eventos));
+                        this.calendarInstance.removeAllEvents();
+                        this.calendarInstance.addEventSource(rawEvents);
+                    }
+                    if (this.selectedAsistenciaEventId) {
+                        await this.cargarInscritos();
+                    }
+                } catch (error) {
+                    console.error("Error cargando eventos:", error);
+                } finally {
+                    this.ui.loadingEventos = false;
+                }
+            },
+
+            onSeleccionarEventoAsistencia() {
+                this.ui.asistenciaMessage = '';
+                this.ui.asistenciaError = false;
+                if (this.eventoAsistenciaActual && this.eventoAsistenciaActual.tipo_inscripcion === 'google_form') {
+                    this.sincronizarInscritos(false);
+                    return;
+                }
+                this.cargarInscritos();
+            },
+
+            initCalendar() {
+                const calendarEl = document.getElementById('calendar');
+                if (!calendarEl) return;
+                if (this.calendarInstance) {
+                    this.calendarInstance.destroy();
+                    this.calendarInstance = null;
+                }
+                const rawEvents = JSON.parse(JSON.stringify(this.eventos));
+
+                this.calendarInstance = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    locale: 'es',
+                    firstDay: 1,
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek'
+                    },
+                    events: rawEvents,
+                    height: '100%',
+                    eventClick: (info) => {
+                        const slug = info.event.extendedProps.slug;
+                        if(slug) {
+                            window.open(this.generarUrl(slug), '_blank');
+                        }
+                    }
+                });
+                this.calendarInstance.render();
+            },
+
+            async crearEvento() {
+                if (!this.eventoForm.titulo || !this.eventoForm.fecha_inicio || !this.eventoForm.fecha_fin) {
+                    alert("Por favor, completa el título y las fechas del evento.");
+                    return;
+                }
+
+                this.ui.savingEvento = true;
+                try {
+                    let start = this.eventoForm.fecha_inicio;
+                    if (start.length === 16) start += ':00';
+                    let end = this.eventoForm.fecha_fin;
+                    if (end.length === 16) end += ':00';
+                    if (new Date(end) <= new Date(start)) {
+                        alert("La fecha/hora de fin debe ser mayor que la de inicio.");
+                        return;
+                    }
+
+                    const payload = {
+                        titulo: this.eventoForm.titulo,
+                        descripcion: this.eventoForm.descripcion || "Sin descripción",
+                        fecha_inicio: start,
+                        fecha_fin: end,
+                        tipo_inscripcion: this.eventoForm.tipo_inscripcion,
+                        form_externo_url: this.eventoForm.form_externo_url,
+                        sheet_respuestas_url: this.eventoForm.sheet_respuestas_url,
+                        enviar_confirmacion_email: !!this.eventoForm.enviar_confirmacion_email
+                    };
+
+                    const res = await fetch('/api/eventos/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.status && data.status !== 'success') {
+                            alert(data.message || "No se pudo crear el evento.");
+                            return;
+                        }
+                        this.eventoForm = {
+                            titulo: '', descripcion: '', fecha_inicio: '', fecha_fin: '',
+                            tipo_inscripcion: 'interno', form_externo_url: '', sheet_respuestas_url: '', enviar_confirmacion_email: false
+                        };
+                        await this.fetchEventos();
+                        if (data.id) {
+                            this.selectedAsistenciaEventId = String(data.id);
+                            await this.cargarInscritos();
+                        }
+                        if (this.usaCalendarioGoogle && data.google_calendar_synced === false) {
+                            const detalle = data.google_calendar_error ? `\n\nDetalle: ${data.google_calendar_error}` : '';
+                            alert(`Evento publicado en UNIBot, pero no se pudo crear en Google Calendar.${detalle}`);
+                        } else {
+                            alert("¡Evento publicado con éxito!");
+                        }
+                    } else {
+                        const errorData = await res.json();
+                        const errorDetail = errorData.detail[0];
+                        alert(`Error de validación en el servidor.\n\nCampo: ${errorDetail.loc[errorDetail.loc.length - 1]}\nMotivo: ${errorDetail.msg}`);
+                    }
+                } catch (e) {
+                    console.error("Error de Red:", e);
+                    alert("Error de conexión al crear el evento.");
+                } finally {
+                    this.ui.savingEvento = false;
+                }
+            },
+
+            async desconectarGoogle() {
+                try {
+                    const res = await fetch('/api/agrupaciones/google-disconnect/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCsrfToken() }
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.status !== 'success') throw new Error(data.message || 'No se pudo desconectar');
+                    this.botForm.googleConectado = false;
+                    this.botForm.googleEmail = '';
+                    this.botForm.googleCalendarEnabled = false;
+                    this.botForm.googleCalendarId = '';
+                    this.ui.integracionError = false;
+                    this.ui.integracionMessage = 'Cuenta de Google desconectada.';
+                    setTimeout(() => this.ui.integracionMessage = '', 4000);
+                } catch (e) {
+                    this.ui.integracionError = true;
+                    this.ui.integracionMessage = 'No se pudo desconectar Google.';
+                    setTimeout(() => this.ui.integracionMessage = '', 4000);
+                }
+            },
+            async desconectarNotion() {
+                try {
+                    const res = await fetch('/api/agrupaciones/notion-disconnect/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCsrfToken() }
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.status !== 'success') throw new Error(data.message || 'No se pudo desconectar');
+                    this.botForm.notionConectado = false;
+                    this.botForm.notionWorkspaceNombre = '';
+                    this.ui.integracionError = false;
+                    this.ui.integracionMessage = 'Cuenta de Notion desconectada.';
+                    setTimeout(() => this.ui.integracionMessage = '', 4000);
+                } catch (e) {
+                    this.ui.integracionError = true;
+                    this.ui.integracionMessage = 'No se pudo desconectar Notion.';
+                    setTimeout(() => this.ui.integracionMessage = '', 4000);
+                }
+            },
+            async guardarGoogleCalendarConfig() {
+                this.ui.savingGoogleCalendar = true;
+                try {
+                    const res = await fetch('/api/agrupaciones/google-calendar-config/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                        body: JSON.stringify({
+                            enabled: !!this.botForm.googleCalendarEnabled,
+                            calendar_id: this.botForm.googleCalendarId || this.botForm.googleEmail || ''
+                        })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.status !== 'success') throw new Error(data.message || 'No se pudo guardar la configuración.');
+                    this.ui.integracionError = false;
+                    this.ui.integracionMessage = data.message || 'Configuración guardada.';
+                    this.$nextTick(() => this.refreshGoogleCalendarIframe());
+                    setTimeout(() => this.ui.integracionMessage = '', 4000);
+                } catch (e) {
+                    this.ui.integracionError = true;
+                    this.ui.integracionMessage = e.message || 'Error guardando Google Calendar.';
+                    setTimeout(() => this.ui.integracionMessage = '', 5000);
+                } finally {
+                    this.ui.savingGoogleCalendar = false;
+                }
+            },
+            async guardarClipUpConfig() {
+                this.ui.savingClipup = true;
+                try {
+                    const res = await fetch('/api/agrupaciones/clipup-config/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                        body: JSON.stringify({
+                            enabled: true,
+                            list_id: this.botForm.clipupListId
+                        })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.status !== 'success') throw new Error(data.message || 'No se pudo conectar ClickUp.');
+                    this.ui.integracionError = false;
+                    this.ui.integracionMessage = data.message || 'ClickUp conectado.';
+                    setTimeout(() => this.ui.integracionMessage = '', 4000);
+                } catch (e) {
+                    this.ui.integracionError = true;
+                    this.ui.integracionMessage = e.message || 'Error conectando ClickUp.';
+                    setTimeout(() => this.ui.integracionMessage = '', 5000);
+                } finally {
+                    this.ui.savingClipup = false;
+                }
+            },
+            async desconectarClipUp() {
+                try {
+                    const res = await fetch('/api/agrupaciones/clipup-disconnect/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCsrfToken() }
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.status !== 'success') throw new Error(data.message || 'No se pudo desconectar ClickUp.');
+                    this.botForm.clipupConectado = false;
+                    this.botForm.clipupListId = '';
+                    this.clipupLists = [];
+                    this.ui.integracionError = false;
+                    this.ui.integracionMessage = data.message || 'ClickUp desconectado.';
+                    setTimeout(() => this.ui.integracionMessage = '', 4000);
+                } catch (e) {
+                    this.ui.integracionError = true;
+                    this.ui.integracionMessage = e.message || 'Error desconectando ClickUp.';
+                    setTimeout(() => this.ui.integracionMessage = '', 5000);
+                }
+            },
+
+            urlInscripcion(ev) {
+                if (ev.tipo_inscripcion === 'google_form' && ev.form_externo_url) {
+                    return ev.form_externo_url;
+                }
+                return this.generarUrl(ev.slug);
+            },
+
+            generarUrl(slug) {
+                if (!slug) return "Procesando...";
+                return `${this.djangoState.host}/evento/registro/${slug}/`;
+            },
+
+            async cargarInscritos(silent = false) {
+                if (!this.selectedAsistenciaEventId) {
+                    this.inscritos = [];
+                    return;
+                }
+                if (!silent) this.ui.loadingInscritos = true;
+                if (!silent) { this.ui.asistenciaMessage = ''; this.ui.asistenciaError = false; }
+                try {
+                    const res = await fetch(`/api/eventos/${this.selectedAsistenciaEventId}/inscritos/`);
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'No se pudo cargar inscritos');
+                    this.inscritos = data;
+                } catch (e) {
+                    if (!silent) { this.ui.asistenciaError = true; this.ui.asistenciaMessage = e.message || 'Error cargando inscritos.'; }
+                    this.inscritos = [];
+                } finally {
+                    if (!silent) this.ui.loadingInscritos = false;
+                }
+            },
+
+            async toggleAsistencia(ins, checked) {
+                const original = ins.asistio;
+                ins.asistio = checked;
+                try {
+                    const res = await fetch(`/api/eventos/${this.selectedAsistenciaEventId}/inscritos/${ins.id}/asistencia/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                        body: JSON.stringify({ asistio: checked })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.status !== 'success') throw new Error(data.message || 'No se pudo actualizar asistencia.');
+                    this.ui.asistenciaError = false;
+                    this.ui.asistenciaMessage = 'Asistencia actualizada.';
+                    await this.fetchEventos();
+                } catch (e) {
+                    ins.asistio = original;
+                    this.ui.asistenciaError = true;
+                    this.ui.asistenciaMessage = e.message || 'Error actualizando asistencia.';
+                }
+            },
+            descargarInscritosExcel() {
+                if (!this.selectedAsistenciaEventId) return;
+                window.open(`/api/eventos/${this.selectedAsistenciaEventId}/inscritos-export/`, '_blank');
+            },
+
+            async sincronizarInscritos(silent = false) {
+                if (!this.selectedAsistenciaEventId) return;
+                if (this.ui.syncingInscritos) return;
+                this.ui.syncingInscritos = true;
+                if (!silent) { this.ui.asistenciaMessage = ''; this.ui.asistenciaError = false; }
+                try {
+                    const res = await fetch(`/api/eventos/${this.selectedAsistenciaEventId}/sync-inscritos/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCsrfToken() }
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.status !== 'success') throw new Error(data.message || 'No se pudo sincronizar');
+                    if (!silent) {
+                        this.ui.asistenciaError = false;
+                        this.ui.asistenciaMessage = `${data.message} (${data.importados || 0} filas procesadas)`;
+                    }
+                    await this.cargarInscritos(true);
+                    await this.fetchEventos();
+                } catch (e) {
+                    if (!silent) { this.ui.asistenciaError = true; this.ui.asistenciaMessage = e.message || 'Error sincronizando.'; }
+                } finally {
+                    this.ui.syncingInscritos = false;
+                }
+            },
+
+            startAutoSyncInscritos() {
+                if (this.autoSyncTimerId) return;
+                this.autoSyncTimerId = setInterval(async () => {
+                    if (!this.selectedAsistenciaEventId) return;
+                    if (this.ui.loadingInscritos || this.ui.syncingInscritos) return;
+                    if (this.eventoAsistenciaActual && this.eventoAsistenciaActual.tipo_inscripcion === 'google_form') {
+                        await this.sincronizarInscritos(true);
+                    } else {
+                        await this.cargarInscritos(true);
+                    }
+                }, 10000);
+            },
+
+            stopAutoSyncInscritos() {
+                if (!this.autoSyncTimerId) return;
+                clearInterval(this.autoSyncTimerId);
+                this.autoSyncTimerId = null;
+            },
+
+            async eliminarEvento(ev) {
+                if (!confirm(`¿Eliminar el evento "${ev.title}"?\nSe borrarán también todos sus inscritos. Esta acción no se puede deshacer.`)) return;
+                try {
+                    const res = await fetch(`/api/eventos/${ev.id}/`, {
+                        method: 'DELETE',
+                        headers: { 'X-CSRFToken': getCsrfToken() }
+                    });
+                    if (!res.ok) throw new Error('No se pudo eliminar el evento.');
+                    if (String(this.selectedAsistenciaEventId) === String(ev.id)) {
+                        this.selectedAsistenciaEventId = '';
+                        this.inscritos = [];
+                    }
+                    await this.fetchEventos();
+                } catch (e) {
+                    alert(e.message || 'Error eliminando el evento.');
+                }
+            },
+
+            copiarAlPortapapeles(texto) {
+                if(texto === "Procesando...") return;
+                navigator.clipboard.writeText(texto)
+                    .then(() => alert("¡Enlace copiado!"))
+                    .catch(() => alert("No se pudo copiar el enlace."));
+            }
+        }
+    }).mount('#app');
+</script>
+{% endblock %}

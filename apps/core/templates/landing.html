@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+    /* Ocultar navbar de base.html en la landing (tiene su propio nav) */
+    .navbar { display: none !important; }
+
+    /* ── Blobs animados ── */
+    @keyframes blob {
+        0%   { transform: translate(0px, 0px) scale(1); }
+        33%  { transform: translate(30px, -50px) scale(1.1); }
+        66%  { transform: translate(-20px, 20px) scale(0.9); }
+        100% { transform: translate(0px, 0px) scale(1); }
+    }
+    .animate-blob { animation: blob 8s infinite; }
+    .delay-2000   { animation-delay: 2s; }
+    .delay-4000   { animation-delay: 4s; }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #7dd3fc; border-radius: 4px; }
+
+    /* ── Gradiente de texto IEEE CIS ── */
+    .cis-gradient-text {
+        background: linear-gradient(135deg, #003087 0%, #0057b8 40%, #00aeef 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* ── Nav glassmorphism ── */
+    .landing-nav {
+        position: fixed; width: 100%; z-index: 50; top: 0; left: 0;
+        background: rgba(255,255,255,0.75);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(0,87,184,0.12);
+        box-shadow: 0 2px 12px rgba(0,48,135,0.08);
+        transition: all 0.3s;
+    }
+    .landing-nav.scrolled {
+        background: rgba(255,255,255,0.92);
+        box-shadow: 0 4px 20px rgba(0,48,135,0.15);
+    }
+
+    /* ── Partícula de red (pseudo IEEE CIS background) ── */
+    .hero-bg-pattern {
+        background-image:
+            radial-gradient(circle at 25% 35%, rgba(0,87,184,0.08) 0%, transparent 50%),
+            radial-gradient(circle at 75% 65%, rgba(0,174,239,0.07) 0%, transparent 50%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════ NAVBAR ══════════════════════════ -->
+<nav class="landing-nav" id="landingNav">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-18 items-center py-3">
+
+            <!-- Logo IEEE CIS -->
+            <a href="/" class="flex items-center gap-3 group">
+                <img src="{% static 'logo_cis.png' %}" alt="IEEE CIS UNI"
+                     class="h-11 w-auto object-contain transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(0,174,239,0.6)]"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <!-- Fallback -->
+                <div style="display:none" class="w-11 h-11 rounded-xl items-center justify-center"
+                     style="background:linear-gradient(135deg,#003087,#00aeef)">
+                    <svg width="26" height="26" viewBox="0 0 50 50" fill="white">
+                        <circle cx="34" cy="14" r="11"/>
+                        <path d="M10 42 C10 29 20 21 29 23 C37 25 40 33 38 41" stroke="white" stroke-width="9" stroke-linecap="round" fill="none"/>
+                    </svg>
+                </div>
+                <div class="flex flex-col leading-tight">
+                    <span class="font-extrabold text-xl text-[#003087] tracking-tight">UNIBot</span>
+                    <span class="text-[10px] font-bold text-[#00aeef] uppercase tracking-widest">IEEE CIS UNI</span>
+                </div>
+            </a>
+
+            <!-- Links -->
+            <div class="hidden md:flex space-x-7 items-center">
+                <a href="#ecosistema" class="text-slate-600 hover:text-[#003087] font-semibold transition-colors text-sm">Ecosistema</a>
+                <a href="#caracteristicas" class="text-slate-600 hover:text-[#003087] font-semibold transition-colors text-sm">Capacidades</a>
+                <a href="#contacto" class="text-slate-600 hover:text-[#003087] font-semibold transition-colors text-sm">Redes Sociales</a>
+                <div class="w-px h-5 bg-slate-200"></div>
+                <a href="{% url 'login' %}" class="text-[#003087] font-bold hover:text-[#00aeef] transition-colors text-sm">Iniciar Sesión</a>
+                <a href="{% url 'register' %}"
+                   class="bg-gradient-to-r from-[#003087] to-[#0057b8] text-white px-5 py-2 rounded-xl font-bold text-sm hover:from-[#00aeef] hover:to-[#0088cc] hover:shadow-lg hover:shadow-[#00aeef]/30 transition-all duration-300 transform hover:-translate-y-0.5">
+                    Crear Cuenta
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- ══════════════════════════ HERO ══════════════════════════ -->
+<section class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-slate-50 hero-bg-pattern">
+    <!-- Blobs IEEE CIS -->
+    <div class="absolute top-0 -left-8 w-80 h-80 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob" style="background:#003087"></div>
+    <div class="absolute top-10 -right-8 w-80 h-80 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob delay-2000" style="background:#00aeef"></div>
+    <div class="absolute -bottom-10 left-32 w-80 h-80 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob delay-4000" style="background:#0057b8"></div>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
+
+        <!-- Badge IEEE CIS -->
+        <div class="inline-flex items-center gap-3 px-5 py-2.5 rounded-full mb-8 border border-blue-100 bg-white shadow-md shadow-blue-100/50">
+            <img src="{% static 'logo_cis.png' %}" alt="IEEE CIS" class="h-6 w-auto object-contain"
+                 onerror="this.style.display='none'">
+            <span class="text-xs font-bold text-[#003087] uppercase tracking-wider">IEEE CIS UNI · Potenciado por Gemini 2.5 Flash IA</span>
+            <span class="flex h-2 w-2 rounded-full bg-[#00aeef] animate-pulse"></span>
+        </div>
+
+        <h1 class="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-8 max-w-5xl mx-auto leading-[1.08]">
+            El cerebro digital para tu<br/>
+            <span class="cis-gradient-text">Agrupación Estudiantil</span>
+        </h1>
+
+        <p class="mt-4 text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-12 leading-relaxed font-medium">
+            Centraliza la gestión de eventos, automatiza la asistencia y brinda soporte 24/7 a tu comunidad con un bot de Telegram alimentado por tus propios documentos.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <a href="{% url 'register' %}"
+               class="group relative inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#003087] to-[#0057b8] text-white px-8 py-4 rounded-2xl font-bold text-lg hover:from-[#00aeef] hover:to-[#0088cc] transition-all duration-300 shadow-xl shadow-[#003087]/25 hover:-translate-y-1 w-full sm:w-auto hover:shadow-[#00aeef]/35">
+                Comenzar Ahora Gratis
+                <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+            </a>
+            <a href="#caracteristicas"
+               class="inline-flex justify-center items-center gap-2 bg-white text-slate-700 border border-slate-200 px-8 py-4 rounded-2xl font-bold text-lg hover:bg-slate-50 hover:border-[#00aeef] transition-all duration-300 hover:shadow-md w-full sm:w-auto">
+                Explorar plataforma
+            </a>
+        </div>
+
+        <!-- Logo grande decorativo -->
+        <div class="mt-16 flex justify-center opacity-10">
+            <img src="{% static 'bot_logo.png' %}" alt="" class="h-80 w-auto object-contain" onerror="this.style.display='none'">
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════ ECOSISTEMA ══════════════════════════ -->
+<section id="ecosistema" class="py-12 border-y border-slate-200 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">Conectado con las herramientas que ya usas</p>
+        <div class="flex flex-wrap justify-center items-center gap-10 md:gap-20 opacity-55 grayscale hover:grayscale-0 transition-all duration-500">
+            <div class="flex items-center gap-2 font-bold text-lg text-slate-800"><i data-lucide="calendar" class="w-7 h-7 text-blue-600"></i> Google Calendar</div>
+            <div class="flex items-center gap-2 font-bold text-lg text-slate-800"><i data-lucide="book-open" class="w-7 h-7 text-slate-900"></i> Notion</div>
+            <div class="flex items-center gap-2 font-bold text-lg text-slate-800"><i data-lucide="layout-list" class="w-7 h-7 text-purple-600"></i> ClickUp</div>
+            <div class="flex items-center gap-2 font-bold text-lg text-slate-800"><i data-lucide="send" class="w-7 h-7 text-sky-500"></i> Telegram</div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════ CARACTERÍSTICAS ══════════════════════════ -->
+<section id="caracteristicas" class="py-24 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <div class="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100">
+                <img src="{% static 'logo_cis.png' %}" alt="IEEE CIS" class="h-5 w-auto" onerror="this.style.display='none'">
+                <span class="text-xs font-bold text-[#003087] uppercase tracking-wider">IEEE CIS UNI</span>
+            </div>
+            <h2 class="text-3xl md:text-5xl font-extrabold text-[#003087] mb-4">Todo en un solo lugar</h2>
+            <p class="text-lg text-slate-600 font-medium">Diseñado específicamente para la logística universitaria.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 auto-rows-[280px]">
+            <!-- Card grande: RAG -->
+            <div class="col-span-1 md:col-span-2 lg:col-span-2 row-span-2 bg-white rounded-[2rem] p-10 border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-500 group relative overflow-hidden flex flex-col justify-between">
+                <div class="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <i data-lucide="brain-circuit" class="w-48 h-48 text-[#003087]"></i>
+                </div>
+                <div>
+                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-inner"
+                         style="background:linear-gradient(135deg,#eff6ff,#dbeafe)">
+                        <i data-lucide="bot" class="w-7 h-7" style="color:#003087"></i>
+                    </div>
+                    <h3 class="text-2xl font-extrabold text-slate-900 mb-4">Sistema RAG Inteligente</h3>
+                    <p class="text-slate-600 text-lg leading-relaxed mb-6 relative z-10">
+                        Sube tus reglamentos, actas y sílabos en PDF. UNIBot los lee, extrae el contexto y responde dudas en tu grupo de Telegram como un experto humano, las 24 horas del día.
+                    </p>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center gap-3 relative z-10">
+                    <div class="w-2 h-2 bg-[#00aeef] rounded-full animate-pulse"></div>
+                    <span class="text-sm font-bold text-slate-700">Entrenando 12 documentos activos</span>
+                </div>
+            </div>
+
+            <!-- Card: Eventos -->
+            <div class="col-span-1 md:col-span-1 lg:col-span-2 rounded-[2rem] p-8 shadow-sm hover:shadow-2xl transition-all duration-500 group overflow-hidden relative text-white flex flex-col justify-center"
+                 style="background:linear-gradient(135deg,#003087 0%,#0057b8 60%,#00aeef 100%)">
+                <div class="absolute -right-6 -bottom-6 opacity-15 group-hover:scale-110 transition-transform duration-700">
+                    <i data-lucide="calendar-days" class="w-40 h-40"></i>
+                </div>
+                <div class="relative z-10">
+                    <h3 class="text-2xl font-extrabold mb-3 text-white">Eventos Sin Fricción</h3>
+                    <p class="text-blue-100 font-medium mb-6">Crea links públicos de inscripción con 1 clic. Integración total con Google Forms o registro nativo.</p>
+                    <div class="inline-flex items-center gap-2 text-sm font-bold text-[#4dcfff] group-hover:text-white transition-colors">
+                        Descubre cómo <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card: Asistencia -->
+            <div class="col-span-1 md:col-span-1 lg:col-span-1 rounded-[2rem] p-8 shadow-sm hover:shadow-xl transition-all duration-500 group text-white"
+                 style="background:linear-gradient(135deg,#00aeef 0%,#0088cc 100%)">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-6">
+                    <i data-lucide="users-round" class="w-6 h-6 text-white"></i>
+                </div>
+                <h3 class="text-xl font-extrabold mb-2">Control de Asistencia</h3>
+                <p class="text-blue-50 text-sm font-medium">Exporta a Excel o envía Actas de Cierre directamente a tu base de Notion.</p>
+            </div>
+
+            <!-- Card: Correos -->
+            <div class="col-span-1 md:col-span-2 lg:col-span-1 bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-500 group">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
+                     style="background:linear-gradient(135deg,#eff6ff,#e0f2fe)">
+                    <i data-lucide="mail-check" class="w-6 h-6" style="color:#0057b8"></i>
+                </div>
+                <h3 class="text-xl font-extrabold text-slate-900 mb-2">Correos Automáticos</h3>
+                <p class="text-slate-600 text-sm font-medium">Conecta tu Gmail para enviar confirmaciones instantáneas a los inscritos.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════ REDES ══════════════════════════ -->
+<section id="contacto" class="py-20 bg-white relative overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-5xl font-extrabold text-[#003087] mb-4">Conéctate con Nosotros</h2>
+            <p class="text-lg text-slate-600 font-medium">Síguenos en nuestras plataformas oficiales para estar al tanto de todo.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <a href="https://www.linkedin.com/company/ieee-cis-uni/" target="_blank"
+               class="group p-8 rounded-[2rem] bg-slate-50 border border-slate-100 hover:border-blue-300 hover:bg-blue-50/50 transition-all duration-300 flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-white shadow-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i data-lucide="linkedin" class="w-8 h-8 text-[#0077b5]"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-2">LinkedIn</h3>
+                <p class="text-slate-500 text-sm">Noticias profesionales y artículos técnicos.</p>
+            </a>
+
+            <a href="https://www.instagram.com/ieeecisuni/" target="_blank"
+               class="group p-8 rounded-[2rem] bg-slate-50 border border-slate-100 hover:border-pink-300 hover:bg-pink-50/50 transition-all duration-300 flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-white shadow-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i data-lucide="instagram" class="w-8 h-8 text-[#e4405f]"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-2">Instagram</h3>
+                <p class="text-slate-500 text-sm">Fotos de eventos y vida estudiantil.</p>
+            </a>
+
+            <a href="https://tu-sitio-web.com" target="_blank"
+               class="group p-8 rounded-[2rem] bg-slate-50 border border-slate-100 hover:border-sky-300 hover:bg-sky-50/50 transition-all duration-300 flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-white shadow-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i data-lucide="globe" class="w-8 h-8 text-[#0057b8]"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-2">Página Web</h3>
+                <p class="text-slate-500 text-sm">Información detallada de nuestra agrupación.</p>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════ CTA FINAL ══════════════════════════ -->
+<section class="relative py-32 overflow-hidden">
+    <div class="absolute inset-0" style="background:linear-gradient(135deg,#071a38 0%,#003087 60%,#0057b8 100%)"></div>
+    <!-- Decoración cyan -->
+    <div class="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10 blur-3xl" style="background:#00aeef"></div>
+    <div class="absolute bottom-0 left-0 w-80 h-80 rounded-full opacity-10 blur-3xl" style="background:#4dcfff"></div>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+        <!-- Logo -->
+        <div class="flex justify-center mb-8">
+            <img src="{% static 'logo_cis.png' %}" alt="IEEE CIS UNI"
+                 class="h-20 w-auto object-contain opacity-90"
+                 style="filter:drop-shadow(0 0 20px rgba(0,174,239,0.6))"
+                 onerror="this.style.display='none'">
+        </div>
+        <h2 class="text-4xl md:text-5xl font-extrabold text-white mb-6">¿Listo para modernizar tu agrupación?</h2>
+        <p class="text-xl text-blue-200 mb-10 font-medium">Únete a la plataforma diseñada por <span class="text-[#4dcfff] font-bold">IEEE CIS UNI</span>, administrada por IA.</p>
+        <a href="{% url 'register' %}"
+           class="inline-flex justify-center items-center gap-2 bg-white text-[#003087] px-10 py-4 rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl hover:shadow-[#00aeef]/30 transition-all duration-300 shadow-xl">
+            Crear mi cuenta gratis
+        </a>
+    </div>
+</section>
+
+<!-- ══════════════════════════ FOOTER ══════════════════════════ -->
+<footer class="bg-[#071a38] border-t border-blue-900/40 pt-14 pb-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
+            <div class="flex items-center gap-3">
+                <img src="{% static 'logo_cis.png' %}" alt="IEEE CIS UNI"
+                     class="h-10 w-auto object-contain"
+                     style="filter:drop-shadow(0 0 8px rgba(0,174,239,0.5))"
+                     onerror="this.style.display='none'">
+                <div class="flex flex-col leading-tight">
+                    <span class="font-extrabold text-xl text-white">UNIBot</span>
+                    <span class="text-[10px] font-bold text-[#00aeef] uppercase tracking-widest">IEEE CIS UNI</span>
+                </div>
+            </div>
+            <div class="flex gap-8 text-sm font-bold text-blue-400">
+                <a href="#caracteristicas" class="hover:text-white transition-colors">Plataforma</a>
+                <a href="{% url 'terminos' %}" class="hover:text-white transition-colors">Términos</a>
+                <a href="{% url 'privacidad' %}" class="hover:text-white transition-colors">Privacidad</a>
+            </div>
+        </div>
+        <div class="border-t border-blue-900/40 pt-8 flex justify-center">
+            <div class="flex items-center gap-2 px-5 py-2.5 bg-white/5 rounded-xl border border-white/10">
+                <span class="text-sm font-semibold text-blue-300">Desarrollado con</span>
+                <span class="text-[#00aeef] text-lg animate-pulse">💙</span>
+                <span class="text-sm font-semibold text-blue-300">por</span>
+                <span class="font-extrabold text-white text-sm tracking-wide">IEEE CIS UNI</span>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+    lucide.createIcons();
+    const nav = document.getElementById('landingNav');
+    window.addEventListener('scroll', () => {
+        nav.classList.toggle('scrolled', window.scrollY > 20);
+    });
+</script>
+{% endblock %}
